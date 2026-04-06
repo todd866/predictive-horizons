@@ -3,15 +3,15 @@ message: "If you use this work, please cite it as below."
 authors:
   - family-names: "Todd"
     given-names: "Ian"
-title: "Predictive Horizons of High-Dimensional Biological Systems"
-version: 1.0.0
+title: "Predictive Horizons of High-Dimensional Biological Systems: The Connectome Is the Measurement, Not the System"
+version: 2.0.0
 url: "https://github.com/todd866/predictive-horizons"
 preferred-citation:
   type: article
   authors:
     - family-names: "Todd"
       given-names: "Ian"
-  title: "Predictive Horizons of High-Dimensional Biological Systems"
+  title: "Predictive Horizons of High-Dimensional Biological Systems: The Connectome Is the Measurement, Not the System"
   journal: "BioSystems"
   year: 2026
   status: "in preparation"

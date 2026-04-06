@@ -30,7 +30,7 @@
 \newcommand{\tpred}{\tau_{\mathrm{pred}}}
 \newcommand{\tslow}{\tau_{\mathrm{slow}}}
 
-\title{Predictive Horizons of High-Dimensional Biological Systems}
+\title{Predictive Horizons of High-Dimensional Biological Systems:\\ The Connectome Is the Measurement, Not the System}
 
 \author{Ian Todd\thanks{ORCID: 0009-0002-6994-0917}\\
 Sydney Medical School\\
@@ -45,10 +45,10 @@ Sydney, NSW, Australia\\
 \maketitle
 
 \begin{abstract}
-Biological systems at every scale behave as though they have access to information about the future. Dominant frameworks treat this capacity as computation over internal models. We propose an alternative: prediction arises from synchronization. A system continuously coupled to its environment aligns its internal dynamics with environmental structure before that structure can be explicitly measured or behaviorally committed. Three timescales define the predictive regime: the synchronization time $\tsync$, the environmental autocorrelation time $\tenv$, and the measurement commitment time $\tmeas$. When $\tsync < \tenv$, the internal state carries future-relevant information; when additionally $\tsync < \tmeas$, the organism appears anticipatory to any observer limited to discrete readouts. We develop a three-level hierarchy---passive, active, and selective synchronization---illustrated across four biological systems from bacterial chemotaxis to cortical prediction. Simulations of a coupled oscillator field demonstrate that the continuous internal state carries predictive information that is largely destroyed by dimensional collapse to a discrete code, and that low-dimensional observers systematically underestimate the information a high-dimensional system contains. This observational gap---hidden correlations accessible to the system but not to coarse-grained measurement---produces an appearance of local entropy reversal. We argue that predictive coding mistakes the low-dimensional products of this collapse for the generative mechanism: intelligence and prediction live upstream of code, in the oscillatory dynamics, not in the coded outputs. The framework operationalizes Igamberdiev's anticipatory dynamics and Rosen's anticipatory systems, identifying the synchronization manifold as the anticipatory model.
+The OpenWorm project reconstructed the complete \textit{C.~elegans} connectome---302 neurons, ${\sim}7{,}000$ synapses---and simulated it in silico, yet the resulting model cannot produce the coordinated locomotion that the living worm achieves trivially. We argue that this failure is not computational but ontological: the connectome is a low-dimensional measurement of a high-dimensional biological system, not the system itself. Every neuron in the worm sits in a continuous bioelectric field---ephaptic coupling, neuropeptide broadcast, proprioceptive feedback---that the wiring diagram does not capture. We develop a synchronization-based framework for biological prediction organized around three timescales: the synchronization time $\tsync$, the environmental autocorrelation time $\tenv$, and the measurement commitment time $\tmeas$. When $\tsync < \tenv$, the organism's internal state carries future-relevant information; when $\tsync < \tmeas$, it appears anticipatory to any observer limited to discrete readouts. We test this framework on the real \textit{C.~elegans} connectome, comparing three models of increasing coupling dimensionality: connectome only, connectome plus ephaptic field, and the full model with neuropeptide broadcast and proprioceptive feedback. The headline result: mutual information with the environment is similar across all three models (${\sim}0.47$ nats), but the field coupling doubles the order parameter ($r = 0.13 \to 0.27$ at the critical regime) and produces consistently positive motor coordination ($\rho_{\mathrm{VA\text{-}VB}} = 0.36 \pm 0.10$, all seeds positive) where the connectome alone shows unreliable coordination ($0.26 \pm 0.14$, high variance). At stronger coupling, the field advantage is dramatic: VA-VB correlation reaches $0.85 \pm 0.08$ with ephaptic coupling versus $0.47 \pm 0.29$ without. The connectome carries environmental information; the field coordinates the body. Prediction without coordination is biologically meaningless. We show further that low-dimensional observers systematically underestimate the information a high-dimensional system contains, and that discrete coding destroys ${\sim}85\%$ of the predictive content carried by continuous oscillatory dynamics. Intelligence and prediction live upstream of code, in the coupling dynamics, not in the coded outputs. The framework operationalizes Igamberdiev's anticipatory dynamics and identifies the synchronization manifold as the anticipatory model.
 \end{abstract}
 
-\noindent\textbf{Keywords:} prediction, synchronization, dimensionality, anticipatory dynamics, coupled oscillators, biological time
+\noindent\textbf{Keywords:} prediction, synchronization, connectome, motor coordination, dimensionality, anticipatory dynamics, coupled oscillators, \textit{C.~elegans}
 
 % Dimensionality box (standard across BioSystems papers)
 \medskip
@@ -58,90 +58,96 @@ Biological systems at every scale behave as though they have access to informati
 
 \section{Introduction}
 \label{sec:intro}
-Prediction is among the most general capacities of living systems. Bacteria swim up chemical gradients by comparing recent and current receptor occupancy \cite{berg2004}. Plants adjust growth trajectories in anticipation of seasonal light changes \cite{harmer2009}. Neural circuits in the cerebellum generate forward models of limb dynamics that precede sensory feedback by tens of milliseconds \cite{wolpert1998}. Social cognition depends on modeling the future behavior of conspecifics under incomplete information \cite{frith2007}. At every scale from molecular to social, organisms behave as though they have access to information about the future---information that, by definition, has not yet arrived through any measurement channel.
 
-The dominant theoretical frameworks treat prediction as \textit{computation over an internal model}. Predictive coding posits hierarchical generative models that propagate top-down expectations, with ascending signals carrying only prediction errors \cite{rao1999,clark2013}. The free-energy principle generalizes this to a variational inference scheme in which organisms minimize surprise by maintaining and updating internal probability distributions over environmental states \cite{friston2010}. In both frameworks, the organism \textit{infers}, \textit{estimates}, and \textit{updates} an explicit representation. Prediction, under these accounts, is a computational achievement---something the system does with its model of the world.
+The OpenWorm project set out to simulate \textit{Caenorhabditis elegans} from its complete connectome \cite{gleeson2018}. The wiring diagram was known: 302 neurons, 6{,}393 chemical synapses, 890 gap junctions, mapped at electron-microscope resolution by White et al.\ \cite{white1986} and refined by Cook et al.\ \cite{cook2019}. The assumption was natural: given the complete circuit, the behavior should follow. It did not. Despite years of engineering effort, connectome-based simulations of \textit{C.~elegans} have not produced the coordinated sinusoidal locomotion that the living worm generates from the moment it hatches \cite{izquierdo2018,cohen2012}.
 
-\textbf{This paper proposes an alternative substrate for prediction: synchronization.} A system continuously coupled to its environment can align its internal dynamics with environmental structure \textit{before that structure can be explicitly measured, discretized, or behaviorally committed}. When a coupled oscillator entrains to a slowly varying external drive, it does not ``predict'' the next cycle by computing a forecast---it is already co-evolving with the process it tracks. What appears as prediction is the behavioral expression of prior alignment: the organism has incorporated environmental structure that has not yet been registered in any discrete output. Generalized synchronization theory \cite{pecora1990,rulkov1995} provides the mathematical backbone. When two coupled dynamical systems achieve generalized synchronization, a functional relationship $\mathbf{y}(t) = \Phi[\mathbf{x}(t)]$ maps the state of one onto the other. The ``model'' is not a stored data structure but the synchronization manifold itself---a geometric object in the joint state space of organism and environment.
+We argue that this failure reveals a category error in computational neuroscience: confusing the measurement for the system. The connectome is what you see when you slice a worm, put it under an electron microscope, and trace connections. It is a low-dimensional projection---a graph---of a continuous, high-dimensional, spatiotemporal biological system. The graph captures which neurons are connected. It does not capture:
 
-This reframing connects three prior results in the BioSystems program on high-dimensional biological dynamics. First, \textit{timing inaccessibility} \cite{todd2025demon}: below the Landauer threshold, irreversible state registration requires at least $\kB T \ln 2$ per binary decision, making explicit measurement thermodynamically expensive. The time to commit a measurement to a stable record---$\tmeas$---has a physical floor that cannot be reduced without energetic cost. Second, \textit{intelligence as high-dimensional coherence} \cite{todd2025intelligence}: high-dimensional systems carry rich internal structure in modes that low-bandwidth observers cannot resolve. An organism with $\Deff \gg 1$ effective degrees of freedom maintains correlations across many coupled subsystems, any one of which may carry environment-relevant information invisible to sparse readout channels. Third, \textit{coherence time} \cite{todd2026coherence}: coordinated states in oscillator assemblies form on their own physical timescale---the entrainment time $\tsync$ has a floor set by coupling strength, topology, and coordination depth, but it can be much faster than the time required for discrete state registration. The present paper connects these three results into a single inequality. When the synchronization timescale is shorter than the environmental autocorrelation time ($\tsync < \tenv$), the organism's internal state tracks environmental structure that persists into the future. When synchronization is also faster than measurement ($\tsync < \tmeas$), the organism appears to ``know'' things it has not yet measured---not because it has computed a prediction, but because continuous coupling has already aligned its dynamics with structure that discrete readout has not yet registered.
-
-This framework operationalizes two related traditions. Rosen's \textit{anticipatory systems} \cite{rosen1985} defined anticipation as behavior in which the present state depends on a model of future states. Rosen's formulation left the nature of the ``model'' underspecified---it need not be a representation in the cognitive-science sense. We identify it with the synchronized slow manifold: the low-frequency, high-participation modes that emerge from organism-environment coupling and persist across environmental evolution. Igamberdiev's program on anticipatory dynamics in biological systems \cite{igamberdiev2015} connects molecular-level quantum non-demolition measurements \cite{igamberdiev2004} with higher-level reflexive modeling of externality \cite{igamberdiev2017}, arguing that anticipatory capacity arises from the temporal organization of biological processes across scales. Our framework provides the dimensional mechanism underlying this distinction: reflexive anticipation corresponds to passive synchronization (entrainment without internal energy expenditure beyond coupling), while reflective anticipation corresponds to selective synchronization (active modulation of which environmental modes are tracked). The prediction bridge from generalized synchronization theory \cite{rulkov1995} supplies the missing formal link---the synchronized manifold \textit{is} the anticipatory model, instantiated in the geometry of coupled dynamics rather than in an explicit internal representation.
-
-Three timescales organize the analysis:
 \begin{itemize}
-\item $\tsync$: the entrainment time---how quickly internal dynamics align with environmental structure through coupling;
-\item $\tenv$: the environmental autocorrelation time---how long environmental structure persists before decorrelating;
-\item $\tmeas$: the measurement commitment time---how long it takes to collapse internal state into an irreversible discrete output.
+\item The continuous bioelectric field in which every neuron is embedded, through which spatially proximate neurons influence each other without synaptic connections (ephaptic coupling \cite{pinotsis2023,anastassiou2011});
+\item The slow, diffuse neuropeptide signals that modulate circuit behavior on timescales of seconds to minutes, broadcast through the extracellular space rather than through specific synaptic connections \cite{bentley2016};
+\item The proprioceptive feedback loop through which the worm senses its own body configuration and uses that information to coordinate the next motor command \cite{wen2012};
+\item The temporal microstructure of when signals arrive relative to each other---phase relationships that carry information but are invisible to a static wiring diagram.
 \end{itemize}
-The \textit{predictive regime} is $\tsync < \tenv$: the organism synchronizes faster than the environment decorrelates, so the present internal state carries information about future environmental states. The \textit{anticipatory appearance} arises when $\tsync < \tmeas$: synchronization is faster than measurement, so the organism acts on structure it has not yet explicitly registered. Together, these define a \textit{predictive horizon} $\tpred$: the temporal window over which synchronized internal state remains informative about future environmental evolution. Intuitively, $\tpred$ cannot exceed $\tenv$ (the environment must still resemble itself) and requires $\tsync < \tenv$ (the organism must keep up). Section~\ref{sec:mutual_info} gives the formal definition in terms of future mutual information.
 
-The remainder of the paper is organized as follows. Section~\ref{sec:asymmetry} argues for the sync-measurement asymmetry on thermodynamic and dynamical grounds, establishing the conditions under which continuous coupling outpaces discrete registration. Section~\ref{sec:hierarchy} presents a three-level hierarchy---passive, active, and selective synchronization---that maps onto biological complexity from molecular to cognitive scales. Section~\ref{sec:cases} illustrates the framework across four biological systems spanning six orders of magnitude in timescale: bacterial chemotaxis, nematode thermotaxis, hippocampal spatial prediction, and human cortical prediction. Section~\ref{sec:predictive} reframes predictive coding within this synchronization-first account, arguing that prediction errors arise not from failed inference but from sync-measurement misalignment. Section~\ref{sec:discussion} discusses implications for the philosophy of prediction, the relationship between synchronization and representation, and empirical tests that could distinguish the two accounts.
+\noindent These are not exotic or speculative channels. They are measured, documented, and well-characterized in the \textit{C.~elegans} literature. They are systematically absent from connectome-based simulations because the modeling toolchain---NeuroML, NEURON, Brian2, OpenWorm/c302---is built around the assumption that neurons are the computational units and synapses are the connections. The toolchain cannot represent a continuous field.
 
+The same pattern played out in the history of glial cells: for decades, glia were ``just structural support'' because the electrophysiological toolchain could not see what they were doing. Now we know they modulate synaptic transmission, maintain ion homeostasis, and form their own signaling networks. They were invisible to the measurement paradigm, not absent from the biology.
+
+\textbf{The resource is right there.} Every neuron in \textit{C.~elegans} sits in a bioelectric field that provides continuous, high-bandwidth, spatially graded coupling. Evolution would not leave this resource unused---it is the radio antenna that the graph-based model ignores. This paper demonstrates that the missing coupling channels are exactly what the connectome simulation needs: not more computation, but more physics.
+
+\medskip
+
+The theoretical framework develops from four prior contributions to this journal. \textit{Limits of Falsifiability} \cite{todd2025falsifiability} established that high-dimensional systems impose measurement limits: below certain thresholds, internal structure is epistemically inaccessible to low-dimensional observers. \textit{Timing Inaccessibility} \cite{todd2025demon} showed that irreversible state registration has a thermodynamic floor: at least $\kB T \ln 2$ per bit, imposing a minimum $\tmeas$. \textit{Intelligence as High-Dimensional Coherence} \cite{todd2025intelligence} argued that systems with $\Deff \gg 1$ carry rich correlational structure across coupled subsystems, invisible to sparse readout channels. \textit{Coherence Time} \cite{todd2026coherence} derived that oscillatory coordination has its own physical timescale $\tsync$, set by coupling strength, topology, and coordination depth.
+
+The present paper connects these results into a single inequality. When synchronization outpaces environmental change ($\tsync < \tenv$), the organism carries future-relevant information. When synchronization outpaces measurement ($\tsync < \tmeas$), it appears anticipatory. On the real \textit{C.~elegans} connectome, we show that the connectome alone satisfies these inequalities for environmental tracking (mutual information is preserved), but fails for motor coordination---the very capacity that defines the worm as a behaving organism. The field coupling is what translates prediction into movement.
+
+The remainder of the paper is organized as follows. Section~\ref{sec:asymmetry} develops the sync-measurement asymmetry on thermodynamic and dynamical grounds. Section~\ref{sec:hierarchy} presents a three-level synchronization hierarchy from passive to selective. Section~\ref{sec:celegans} tests the framework on the real \textit{C.~elegans} connectome. Section~\ref{sec:gap} demonstrates the observational gap between system information and observer information. Section~\ref{sec:predictive} reframes predictive coding as a description of the low-dimensional shadow, not the mechanism. Section~\ref{sec:discussion} discusses implications.
+
+
+%% ═══════════════════════════════════════════════════════════════════
 \section{The Sync-Measurement Asymmetry}
 \label{sec:asymmetry}
-The central claim of this paper rests on an asymmetry between two processes: synchronization (continuous entrainment of internal dynamics to environmental structure) and measurement (irreversible commitment of internal state to a discrete output). This section motivates the physical and information-theoretic grounds for that asymmetry, introduces the three timescales that organize the analysis, and argues for the conditions under which a coupled biological system exhibits predictive dynamics.
+
+The central claim rests on an asymmetry between two processes: synchronization (continuous entrainment of internal dynamics to environmental structure) and measurement (irreversible commitment of internal state to a discrete output).
 
 \subsection{Why synchronization outruns measurement}
 \label{sec:sync_outruns}
 
-Synchronization and measurement are fundamentally different operations, and this difference is not incidental---it is a consequence of channel capacity. Entrainment exploits the \textit{full coupling interface} between organism and environment in parallel. Every receptor, every ion channel, every membrane surface element simultaneously mediates the flow of correlations from external dynamics into internal state. A bacterium swimming in a chemical gradient does not entrain one receptor at a time; the entire receptor array participates in aligning internal signaling dynamics with the spatial structure of the chemoattractant field. A circadian oscillator does not synchronize through a single photoreceptor---the coupling surface includes hundreds of light-sensitive cells whose collective input drives the phase of the internal clock. The bandwidth of synchronization scales, roughly, with the dimensionality of the coupling interface: more coupled degrees of freedom means faster convergence to the synchronized manifold. Recent work on cytoelectric coupling \cite{pinotsis2023} suggests that the coupling interface may be broader than synaptic connectivity alone---endogenous electric fields sculpt population-level neural activity, providing an additional high-bandwidth channel through which neural ensembles entrain to structured input.
+Synchronization and measurement differ in channel capacity. Entrainment exploits the \textit{full coupling interface} between organism and environment in parallel. Every receptor, every ion channel, every membrane surface element simultaneously mediates the flow of correlations from external dynamics into internal state. A bacterium swimming in a chemical gradient does not entrain one receptor at a time; the entire array participates. The bandwidth of synchronization scales with the dimensionality of the coupling interface. Recent work on cytoelectric coupling \cite{pinotsis2023} suggests the interface may be broader than synaptic connectivity alone---endogenous electric fields provide an additional high-bandwidth channel through which neural ensembles entrain to structured input.
 
-Measurement, by contrast, is a bottleneck operation. To register environmental information as a discrete, irreversible output---a tumble decision in chemotaxis, a motor plan in sensorimotor control, a categorical judgment in perception---the system must stabilize a continuous internal state, collapse it through a decision boundary, and commit the result to a form that cannot be passively reversed. This is exactly the ``commit event'' analyzed in the coherence time framework \cite{todd2026coherence}: a thermodynamically irreversible transition that dissipates at least $\kB T \ln 2$ per bit of registered information \cite{todd2025demon}. The commit event is necessarily serial in a specific sense---it must pass through a low-dimensional output channel (a flagellar motor has one rotational degree of freedom; a saccade has two; a verbal report has the bandwidth of a single articulatory stream). No matter how rich the internal state, the output channel imposes a capacity ceiling on the rate of committed registration.
+Measurement, by contrast, is a bottleneck. To register environmental information as a discrete, irreversible output---a tumble decision, a motor plan, a categorical judgment---the system must stabilize a continuous state, collapse it through a decision boundary, and commit the result. This is the thermodynamically irreversible ``commit event'' of \cite{todd2026coherence}, dissipating at least $\kB T \ln 2$ per bit \cite{todd2025demon}. The output channel is necessarily low-dimensional (a flagellar motor has one rotational degree of freedom; a saccade has two).
 
-Moreover, the effective dimensionality of a coupling channel exceeds its apparent channel count through temporal precision. A single sensory channel can carry high-dimensional information when the precise timing of events within a shared oscillatory cycle encodes the state of the high-dimensional system that produced them. Phase coding---the encoding of information in the temporal placement of signals relative to an ongoing oscillation---multiplies the effective bandwidth of any coupling interface by the ratio of carrier frequency to timing resolution. This is why timing inaccessibility \cite{todd2025demon} matters for the sync-measurement asymmetry: the temporal microstructure that is thermodynamically inaccessible to discrete measurement remains accessible to continuous entrainment, because synchronization does not require discretizing temporal information---it entrains to it directly. The information that measurement loses at the commit boundary, synchronization preserves in the geometry of coupled phase relationships.
+Moreover, the effective dimensionality of a coupling channel exceeds its apparent channel count through temporal precision. Phase coding---encoding information in the temporal placement of signals relative to an ongoing oscillation---multiplies the effective bandwidth of any coupling interface. The temporal microstructure that is thermodynamically inaccessible to discrete measurement remains accessible to continuous entrainment, because synchronization entrains to timing directly without discretizing it.
 
-This creates a structural asymmetry (Figure~\ref{fig:sync_measurement}). The synchronization bandwidth scales with the coupling surface and its temporal precision---potentially high-dimensional, with $\Deff \gg 1$ coupled modes entraining simultaneously and phase relationships encoding additional dimensions within each mode. The measurement bandwidth is capped by the output channel---typically low-dimensional, with one or a few committed degrees of freedom per decision epoch. The organism's internal state can therefore carry environment-correlated structure that has not yet passed through the measurement bottleneck. This is not a computational achievement; it is a consequence of the mismatch between input bandwidth and output bandwidth.
+This creates a structural asymmetry (Figure~\ref{fig:alignment}). Synchronization bandwidth scales with the coupling surface---potentially high-dimensional. Measurement bandwidth is capped by the output channel---typically one or a few committed degrees of freedom per decision epoch. The organism's internal state therefore carries environment-correlated structure that has not yet passed through the measurement bottleneck.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{simulations/figures/fig1_alignment.pdf}
-\caption{Synchronization manifold formation in a coupled oscillator field ($25 \times 25 = 625$ oscillators coupled to a spatiotemporal OU environment with $\tenv = 4$\,s). Each panel shows the alignment field $\cos(\theta_{\mathrm{env}} - \theta)$ at the final timestep, where $+1$ (red) indicates phase-locked to the environment and $-1$ (blue) indicates anti-phase. \textbf{$K = 0$:} No coupling; random alignment. \textbf{$K = 5$:} Weak coupling; spatial coherence domains emerge. \textbf{$K = 18$:} Moderate coupling; near-uniform alignment. \textbf{$K = 45$:} Strong coupling; fully locked. Mean alignment $\bar{a}$ annotated per panel.}
-\label{fig:sync_measurement}
+\caption{Synchronization manifold formation in a coupled oscillator field ($25 \times 25 = 625$ oscillators coupled to a spatiotemporal OU environment with $\tenv = 4$\,s). Each panel shows the alignment field $\cos(\theta_{\mathrm{env}} - \theta)$ at the final timestep. $+1$ (red): phase-locked. $-1$ (blue): anti-phase. Mean alignment $\bar{a}$ annotated per panel.}
+\label{fig:alignment}
 \end{figure}
 
 \subsection{Three timescales}
 \label{sec:timescales}
 
-The asymmetry between synchronization and measurement generates three characteristic timescales that organize the analysis of biological prediction.
-
 \begin{definition}[Predictive regime timescales]\label{def:timescales}
 For an organism coupled to an environment:
 \begin{itemize}
-\item $\tsync$: the entrainment time---time for organism-environment coupling to align relevant internal modes with environmental structure
+\item $\tsync$: the entrainment time---time for coupling to align relevant internal modes with environmental structure
 \item $\tenv$: the environmental autocorrelation time---timescale over which the relevant environmental variable remains self-correlated
-\item $\tmeas$: the commitment time---time required to collapse continuous internal state into a discrete, irreversible output (a tumble decision, a turn, a navigational choice, a motor plan)
+\item $\tmeas$: the commitment time---time required to collapse continuous internal state into a discrete, irreversible output
 \end{itemize}
 \end{definition}
 
-\noindent These three timescales are not independent parameters chosen for convenience; each has a physical basis. The entrainment time $\tsync$ depends on coupling strength, network topology, and the number of modes that must coordinate---it has a lower bound set by the coherence time analysis of \cite{todd2026coherence}, where coordination depth and coupling architecture determine the minimum time to establish coherent oscillatory alignment. The environmental autocorrelation time $\tenv$ is a property of the environment itself: the persistence time of chemical gradients, the period of diurnal cycles, the predictability window of a prey animal's trajectory. The commitment time $\tmeas$ has a thermodynamic floor set by the Landauer limit \cite{todd2025demon} and a practical floor set by the biophysics of the output channel---the time to reverse a flagellar motor, to initiate a saccade, to execute a motor plan.
+\noindent Each has a physical basis. $\tsync$ has a lower bound from the coherence time analysis of \cite{todd2026coherence}. $\tenv$ is a property of the environment. $\tmeas$ has a thermodynamic floor from the Landauer limit \cite{todd2025demon} and a practical floor from the biophysics of the output channel.
 
 Two inequalities define the regimes of interest:
 \begin{enumerate}
-\item \textbf{Predictive regime:} $\tsync < \tenv$. The organism entrains to environmental structure faster than that structure decorrelates. The synchronized internal state therefore carries information about environmental states that have not yet occurred but are statistically implied by the current structure.
-\item \textbf{Anticipatory appearance:} $\tsync < \tmeas$. Synchronization is faster than committed measurement. The organism's continuous internal dynamics are aligned with environmental structure that has not yet been registered in any discrete output. To an observer who can only see committed outputs, the organism appears to act on information it has not yet acquired.
+\item \textbf{Predictive regime:} $\tsync < \tenv$. The organism entrains faster than the environment decorrelates. The synchronized state carries information about future environmental states.
+\item \textbf{Anticipatory appearance:} $\tsync < \tmeas$. Synchronization is faster than committed measurement. To an observer limited to discrete readouts, the organism appears to act on information it has not yet acquired.
 \end{enumerate}
-
-\noindent When both inequalities hold simultaneously ($\tsync < \tmeas < \tenv$), the system occupies a regime in which prediction is both physically real (the internal state genuinely carries future-relevant information) and observationally striking (the organism appears anticipatory to discrete readout).
+When both hold ($\tsync < \tmeas < \tenv$), prediction is physically real and observationally striking.
 
 \subsection{Prediction as future mutual information}
 \label{sec:mutual_info}
 
-The claim that synchronized internal state carries ``future-relevant information'' requires precise formulation. We define the \textit{predictive content} of an organism's internal state at time $t$ as the mutual information between that state and the future environmental state at lag $\Delta t$:
+We define the \textit{predictive content} of the internal state at time $t$ as:
 \begin{equation}
 \label{eq:predictive_content}
 I_{\mathrm{pred}}(\Delta t) \;=\; I\!\left(X_{\mathrm{int}}(t);\; X_{\mathrm{env}}(t + \Delta t)\right).
 \end{equation}
-This quantity measures how much knowledge of the organism's current internal configuration reduces uncertainty about the environment at a future time. It is bounded above by the entropy of $X_{\mathrm{env}}(t + \Delta t)$ and decays with $\Delta t$ as the environment decorrelates from its current state. Crucially, $I_{\mathrm{pred}}(\Delta t) > 0$ does not require the organism to have computed a forecast or to maintain an explicit representation of the future. It requires only that the internal state be correlated with future environmental states---a condition that synchronization naturally produces.
+This measures how much knowledge of the organism's current internal configuration reduces uncertainty about the future environment. $I_{\mathrm{pred}}(\Delta t) > 0$ does not require an explicit representation of the future---only that the internal state be correlated with future environmental states, which synchronization naturally produces.
 
-The decay profile of $I_{\mathrm{pred}}(\Delta t)$ is governed by the autocorrelation structure of the \textit{shared slow manifold}: the low-frequency, high-participation modes that are common to both organism and environment dynamics under coupling. When organism-environment synchronization is achieved through generalized synchronization \cite{rulkov1995,kocarev1996}, a functional map $\Phi: X_{\mathrm{env}} \to X_{\mathrm{int}}$ relates environmental states to internal states. If the shared modes are slow (autocorrelation time $\tslow$), then the synchronized internal state at time $t$ remains correlated with environmental states at $t + \Delta t$ for lags up to $\Delta t \sim \tslow$. We define the \textit{prediction horizon}:
+The decay profile is governed by the autocorrelation of the \textit{shared slow manifold}: the low-frequency, high-participation modes common to both organism and environment under coupling. We define the \textit{prediction horizon}:
 \begin{equation}
 \label{eq:pred_horizon}
 \tpred \;=\; \sup\!\left\{\Delta t : I_{\mathrm{pred}}(\Delta t) > \epsilon\right\},
 \end{equation}
-where $\epsilon$ is a functional threshold below which the mutual information is too weak to support adaptive behavior. The prediction horizon is bounded: $\tpred \leq \tslow \leq \tenv$.
+where $\epsilon$ is a functional threshold. The prediction horizon is bounded: $\tpred \leq \tslow \leq \tenv$.
 
-A critical distinction must be stated explicitly. A system with long-lived internal states that are \textit{uncorrelated} with the environment has \textit{zero} predictive content regardless of the persistence of those states. A rock has extremely stable internal configurations; it predicts nothing. Predictive content requires the functional relationship established by synchronization---the coupling-dependent map $\Phi$ that links internal dynamics to environmental dynamics. Without this functional relationship, internal persistence is mere inertia, not prediction. The thermodynamic cost analysis of Still et al.\ \cite{still2012} reinforces this point: maintaining internal states that track environmental correlations has measurable energetic signatures distinct from passive persistence.
+A system with long-lived internal states \textit{uncorrelated} with the environment has zero predictive content. A rock has stable configurations; it predicts nothing. Predictive content requires the functional relationship established by synchronization---the coupling-dependent map $\Phi$ from environmental to internal dynamics \cite{rulkov1995,kocarev1996}.
 
 \subsection{Formal result}
 \label{sec:formal_result}
@@ -149,25 +155,23 @@ A critical distinction must be stated explicitly. A system with long-lived inter
 \begin{proposition}[Predictive regime]\label{prop:predictive}
 A biological system exhibits predictive dynamics when:
 \begin{enumerate}
-\item $\tsync < \tenv$: entrainment to environmental structure is faster than environmental change;
-\item the resulting synchronized state has future mutual information: $I(X_{\mathrm{int}}(t); X_{\mathrm{env}}(t{+}\Delta t)) > 0$ for $\Delta t \leq \tpred$;
+\item $\tsync < \tenv$: entrainment is faster than environmental change;
+\item the synchronized state has future mutual information: $I(X_{\mathrm{int}}(t); X_{\mathrm{env}}(t{+}\Delta t)) > 0$ for $\Delta t \leq \tpred$;
 \item $\tpred$ is bounded by the autocorrelation time of the shared slow manifold.
 \end{enumerate}
 The system appears anticipatory to any observer limited to discrete readouts whenever $\tsync < \tmeas$.
 \end{proposition}
 
-\noindent An important restriction applies. The claim that synchronized modes tend to be slow draws on the structure of biologically relevant coupling regimes: diffusive coupling, nearest-neighbor interactions, and hierarchical network architectures. In these regimes, modes that recruit many degrees of freedom---and therefore carry the richest environmental correlations---tend to have the longest characteristic timescales, because coordination across many units requires time proportional to the coupling path length. This is a regime-specific observation, not a universal theorem. Coupling architectures that violate this tendency (e.g., global all-to-all coupling with uniform strength) could in principle produce fast high-participation modes. We state the restriction explicitly: the predictive horizon analysis applies in the biologically common regime where coordination depth and mode timescale are positively correlated.
+\noindent The claim that synchronized modes tend to be slow draws on biologically relevant coupling regimes: diffusive coupling, nearest-neighbor interactions, hierarchical networks. In these regimes, modes that recruit many degrees of freedom tend to have the longest timescales. This is regime-specific, not universal.
 
-\subsection{Supporting mathematics: embedding and anticipatory synchronization}
-\label{sec:takens}
+Two results from dynamical systems theory support the framework. First, Takens' embedding theorem \cite{takens1981}: if $\Deff \geq 2d + 1$ relative to environmental attractor dimension $d$, the coupling interface supports a faithful map $\Phi$ from environmental to internal dynamics. Second, Voss \cite{voss2000} showed that delayed coupling can produce \textit{anticipatory synchronization}---the response literally leads the driver---providing a concrete existence proof that synchronization-based prediction is dynamically possible.
 
-Two results from dynamical systems theory support the framework. First, Takens' embedding theorem \cite{takens1981} guarantees that a time-delay embedding of dimension $m \geq 2d + 1$ (where $d$ is the dimension of the underlying attractor) generically provides a diffeomorphic reconstruction of the attractor's topology. In the context of generalized synchronization, this means that if the organism's effective dimensionality satisfies $\Deff \geq 2d + 1$ relative to the environmental attractor dimension $d$, the coupling interface can in principle support a faithful functional map $\Phi$ from environmental dynamics to internal dynamics \cite{kocarev1996}. The organism need not ``know'' the attractor dimension; the requirement is that the coupling interface provides sufficient degrees of freedom for the synchronization manifold to be embedding-complete.
 
-Second, Voss \cite{voss2000} demonstrated that dynamical systems with delayed coupling can achieve \textit{anticipatory synchronization}: the response system synchronizes not to the current state of the driver but to its \textit{future} state. In Voss's construction, a response system coupled to a driver with transmission delay $\tau_d$ can, under appropriate conditions, satisfy $\mathbf{y}(t) = \mathbf{x}(t + \tau_d)$---the response literally leads the driver by the delay time. This result provides a concrete existence proof that synchronization-based prediction is dynamically possible, not merely a metaphor. However, Voss anticipation requires specific coupling architectures (typically involving a copy of the driver dynamics within the response system) that are not generically present in all biological systems. We cite it as a motivating special case that demonstrates the dynamical feasibility of synchronization-based prediction, not as a claim that all biological prediction operates through this specific mechanism. The general framework developed here requires only the weaker condition of generalized synchronization with slow shared modes, not the stronger condition of anticipatory synchronization in the Voss sense.
-
-\section{Passive, Active, and Selective Sync}
+%% ═══════════════════════════════════════════════════════════════════
+\section{Synchronization Hierarchy}
 \label{sec:hierarchy}
-The sync-measurement asymmetry derived in Section~\ref{sec:asymmetry} operates at every biological scale, from membrane-bound chemoreceptors to prefrontal cortical circuits. But organisms differ profoundly in how they control the synchronization process itself. This section introduces three levels of synchronization---passive, active, and selective---that form a hierarchy of increasing control architecture (Figure~\ref{fig:hierarchy}). The hierarchy does not require new physics at each level; the same entrainment dynamics apply throughout. What changes is the degree to which the organism modulates \textit{which} environmental modes it synchronizes with, \textit{how strongly} it couples to them, and \textit{when} it reallocates synchronization resources from one environmental feature to another. Each level adds control circuitry on top of the same underlying coupling physics, and each level extends the organism's predictive horizon in a distinct way.
+
+The sync-measurement asymmetry operates at every biological scale. Organisms differ in how they \textit{control} the synchronization process. Three levels form a hierarchy of increasing control architecture (Figure~\ref{fig:hierarchy}).
 
 \begin{figure}[H]
 \centering
@@ -178,48 +182,39 @@ The sync-measurement asymmetry derived in Section~\ref{sec:asymmetry} operates a
     levellabel/.style={font=\small\bfseries},
 ]
 
-% Row spacing — tighter
 \def\rowA{3.2}
 \def\rowB{0}
 \def\rowC{-3.2}
 
-% === Row 1: Passive sync ===
+% === Passive sync ===
 \node[levellabel] at (-3.8,\rowA) {Passive};
 \node[orgbox] (org1) at (0,\rowA) {\footnotesize Organism};
 \node[envbox] (env1) at (3.5,\rowA) {\footnotesize Environment};
-
 \foreach \y in {-0.2,0,0.2} {
     \draw[->, gray!50] ([yshift=\y cm]org1.east) -- ([yshift=\y cm]env1.west);
 }
-
 \node[right=0.5cm of env1, font=\footnotesize, align=left] {%
 \textit{E.\ coli} \quad {\footnotesize\itshape Molecular}\\[2pt]
 $\tsync$ fixed by coupling physics};
 
-% === Row 2: Active sync ===
+% === Active sync ===
 \node[levellabel] at (-3.8,\rowB) {Active};
 \node[orgbox] (org2) at (0,\rowB) {\footnotesize Organism};
 \node[envbox] (env2) at (3.5,\rowB) {\footnotesize Environment};
-
-% Arrows — varying thickness shows gain modulation
 \draw[->, gray!50, line width=0.4pt] ([yshift=-0.2cm]org2.east) -- ([yshift=-0.2cm]env2.west);
 \draw[->, gray!40, line width=1.2pt] ([yshift=0cm]org2.east) -- ([yshift=0cm]env2.west);
 \draw[->, gray!40, line width=1.2pt] ([yshift=0.2cm]org2.east) -- ([yshift=0.2cm]env2.west);
-
 \node[right=0.5cm of env2, font=\footnotesize, align=left] {%
 \textit{C.\ elegans} \quad {\footnotesize\itshape Intermediate}\\[2pt]
 $\tsync$ modulated by circuit gain};
 
-% === Row 3: Selective sync ===
+% === Selective sync ===
 \node[levellabel] at (-3.8,\rowC) {Selective};
 \node[orgbox] (org3) at (0,\rowC) {\footnotesize Organism};
 \node[envbox] (env3) at (3.5,\rowC) {\footnotesize Environment};
-
-% Some channels active, one suppressed
 \draw[->, gray!40, line width=1.2pt] ([yshift=-0.2cm]org3.east) -- ([yshift=-0.2cm]env3.west);
 \draw[->, gray!40, line width=1.2pt] ([yshift=0.1cm]org3.east) -- ([yshift=0.1cm]env3.west);
 \draw[->, gray!85, line width=0.3pt, dashed] ([yshift=0.3cm]org3.east) -- ([yshift=0.3cm]env3.west);
-
 \node[right=0.5cm of env3, font=\footnotesize, align=left] {%
 Cortex \quad {\footnotesize\itshape Cognitive}\\[2pt]
 $\tsync$ managed across targets};
@@ -231,245 +226,205 @@ $\tsync$ managed across targets};
     node[midway, left, font=\scriptsize, text=gray!50] {+ channel selection};
 
 \end{tikzpicture}
-\caption{Three-level synchronization hierarchy. \textbf{Level~1 (Passive):} Coupling strength and mode selection are fixed by the physical interface (membrane, receptors); $\tsync$ is determined entirely by coupling physics. Example: \textit{E.~coli} chemotaxis. \textbf{Level~2 (Active):} Circuit-level gain modulation adjusts coupling strength in real time, making $\tsync$ a variable under partial control. Example: \textit{C.~elegans} thermotaxis. \textbf{Level~3 (Selective):} A selector mechanism dynamically allocates finite synchronization resources across multiple environmental channels, amplifying some and suppressing others. Example: cortical attention. Progression from molecular-level anticipation to reflective modeling follows Igamberdiev's framework \cite{igamberdiev2015,igamberdiev2017}.}
+\caption{Three-level synchronization hierarchy. \textbf{Passive:} Coupling strength is fixed by the physical interface; $\tsync$ determined by coupling physics. \textbf{Active:} Circuit-level gain modulation makes $\tsync$ a variable under partial control. \textbf{Selective:} Finite synchronization resources are dynamically allocated across environmental channels. Progression follows Igamberdiev's framework from reflexive to reflective anticipation \cite{igamberdiev2015,igamberdiev2017}.}
 \label{fig:hierarchy}
 \end{figure}
 
-\subsection{Passive sync}
-\label{sec:passive}
+\textbf{Passive synchronization} requires no computation. The coupling interface---shaped by evolution---aligns internal dynamics with environmental structure through direct physical interaction. \textit{E.~coli} chemotaxis is canonical: the receptor array continuously couples intracellular signaling to the chemical gradient, producing anticipatory behavior ($\tsync \sim$\,ms, $\tenv \sim$\,seconds) without any internal model \cite{berg2004,segall1986}. Levin's bioelectric work extends this to multicellular collectives: gap junction-mediated signaling synchronizes intracellular states across tissues, enabling collective anticipation \cite{levin2021,levin2019}.
 
-At the simplest level, synchronization requires no computation and no internal representation. The organism's coupling interface---shaped by evolutionary selection over phylogenetic time---aligns internal degrees of freedom with environmental structure through direct physical interaction. The membrane receptors, ion channels, and conformational dynamics that constitute the interface are themselves the ``model'' in Rosen's sense \cite{rosen1985}: the anticipatory system is the coupling architecture, not a stored data structure that the coupling architecture consults. $\tsync$ at this level is determined entirely by coupling strength and interface bandwidth. The organism exerts no real-time control over the entrainment process; it cannot speed up synchronization, shift which modes are tracked, or suppress coupling to irrelevant environmental features. Evolution has tuned the interface, but the individual organism simply runs it.
+\textbf{Active synchronization} adds circuit-level control over coupling strength. \textit{C.~elegans} thermotaxis illustrates this: AFD thermosensory neurons passively couple to the thermal field ($\tsync \sim$\,100~ms), but interneuron circuits (AIY, AIZ, RIA) modulate gain based on cultivation history \cite{mori1995,clark2006}. $\tsync$ becomes a variable rather than a constant. Kelso's coordination dynamics \cite{kelso1995} provides the theoretical language: metastable coordination patterns whose transitions the organism can modulate.
 
-\textit{Escherichia coli} chemotaxis provides a canonical example. The bacterium's outer membrane presents an array of methyl-accepting chemotaxis proteins (MCPs) that bind chemoattractant molecules. Ligand binding modulates the activity of the histidine kinase CheA, which in turn phosphorylates the response regulator CheY, biasing the flagellar motor between run and tumble states. The entire signaling cascade---from receptor occupancy through phosphotransfer to motor switching---operates as a continuous coupling channel between the chemical gradient and the bacterium's locomotor state. The bacterium does not ``predict'' where the gradient leads; its intracellular signaling dynamics are synchronized, through continuous membrane coupling, with the spatial structure of the chemoattractant field. Because the gradient's autocorrelation length exceeds the bacterium's body length, and because the receptor array entrains faster than the gradient evolves ($\tsync < \tenv$), the bacterium's internal state carries information about gradient structure it has not yet traversed. Prediction is a consequence of the coupling geometry, not a goal the bacterium pursues.
-
-In Igamberdiev's framework \cite{igamberdiev2015}, this represents the most basic level of anticipatory dynamics: anticipatory behavior that arises from the molecular organization of the system without requiring any explicit model of future states. The ``model'' at this level is the coupling interface itself---the evolved arrangement of receptors, kinases, and response regulators that ensures internal dynamics track external structure. Rosen's insight \cite{rosen1985} that anticipatory systems need not contain symbolic representations finds its most literal instantiation here: the anticipatory model is identical to the physical coupling channel.
-
-Passive synchronization is not limited to single-celled organisms. Levin and colleagues \cite{levin2021,levin2019} have demonstrated that gap junction-mediated bioelectric signaling enables collective anticipatory behavior in cell groups: bioelectric patterns among non-neural cells establish voltage gradients that encode positional information and coordinate morphogenesis, regeneration, and cancer suppression. In the language of this framework, gap junctions are continuous coupling channels that synchronize intracellular signaling states across a tissue, enabling the collective to carry information about large-scale spatial structure that no individual cell could access. The ``cognitive lightcone'' concept \cite{levin2019}---the spatial and temporal extent over which a biological system can effectively anticipate---maps directly onto our prediction horizon $\tpred$, with gap junction bandwidth setting $\tsync$ at the tissue level.
-
-Passive sync generates short-horizon prediction. Because $\tsync$ cannot be modulated in real time, the prediction horizon is fixed by the biophysics of the coupling interface and the statistics of the environment. If the environment changes faster than the interface can entrain, prediction fails entirely. If the environment is stable, prediction is automatic but shallow---the organism tracks current structure into the near future but cannot extend its horizon by investing additional resources.
-
-\subsection{Active sync}
-\label{sec:active}
-
-Active synchronization introduces circuit-level control over coupling strength and mode selection. The organism can amplify synchronization with specific environmental features while suppressing coupling to others, and it can modulate $\tsync$ in real time by adjusting the gain of the coupling channel. This is not a change in the physics of entrainment; it is the addition of control architecture that regulates which entrainment pathways are operative at any given moment.
-
-\textit{Caenorhabditis elegans} thermotaxis illustrates the transition from passive to active sync. The worm's AFD thermosensory neurons couple to ambient thermal gradients through temperature-sensitive receptor currents. At this sensory level, the coupling is passive: receptor dynamics entrain to the local thermal field just as \textit{E.\ coli} receptors entrain to chemical gradients. But the worm's behavior is not a fixed function of AFD output. Interneuron circuits---particularly the AIY, AIZ, and RIA interneurons---modulate the gain of the thermosensory signal and gate its influence on motor output. The worm can shift between thermophilic movement (tracking toward its cultivation temperature) and cryophilic movement (tracking away from warm regions) by changing which interneuron pathways are active \cite{mori1995}. This is active modulation of the coupling mode: the sensory interface remains the same, but the downstream circuit selects which aspect of the thermal field drives behavior.
-
-The consequence for prediction is that $\tsync$ becomes a variable rather than a constant. By amplifying gain on one coupling channel, the organism can entrain faster to a selected environmental feature---effectively deepening synchronization with that feature at the expense of others. The prediction horizon for the selected feature increases (faster sync, same $\tenv$), while the prediction horizon for suppressed features decreases or vanishes. This is an attention-like mechanism operating at the level of coupling dynamics rather than at the level of representational selection.
-
-Kelso's coordination dynamics framework \cite{kelso1995} provides the theoretical language for this level. In Kelso's account, coupled dynamical systems exhibit \textit{metastable} coordination patterns: quasi-stable phase relationships that persist for extended durations before transitioning to alternative coordination modes. The transitions are not random but are governed by control parameters (coupling strength, frequency detuning) that the organism can modulate. Active sync, in this language, is the capacity to shift between metastable coordination patterns---to select which phase relationship with the environment is currently maintained. The organism does not compute a new model; it transitions between pre-existing dynamical attractors in the organism-environment coupling space. Active sync occupies the intermediate position between Igamberdiev's reflexive and reflective anticipation: the organism modulates its coupling but does not yet maintain an explicit internal model of what it is tracking.
-
-\subsection{Selective sync}
-\label{sec:selective}
-
-Selective synchronization adds a further capacity: the dynamic reallocation of finite dimensional resources across multiple environmental features. Where active sync modulates coupling strength within a fixed set of channels, selective sync chooses \textit{which slow modes to maintain and which to release}. The organism actively manages $\tsync$ across a portfolio of environmental processes, investing synchronization resources where the expected predictive return is highest and withdrawing them where environmental structure has become unpredictable or irrelevant.
-
-Cortical attention provides the paradigmatic example. Prefrontal circuits gate which sensory streams achieve cross-regional coherence \cite{fries2005}, with working memory maintained through discrete gamma and beta bursts rather than sustained oscillations \cite{miller2018,lundqvist2016}. When attending to a visual stimulus, gamma-band synchronization between prefrontal and visual cortices increases, while synchronization with auditory cortex may decrease. This is not merely gain modulation (active sync); it is a reallocation of the finite coherence bandwidth of the cortical network. The prefrontal cortex does not simply amplify one channel---it orchestrates which sets of cortical regions enter into synchronized states and which are released from coordination. The prediction horizon for attended features extends (deeper sync, maintained coupling), while prediction for unattended features contracts.
-
-Social prediction represents selective sync at its most demanding. Predicting the behavior of a conspecific requires synchronizing with another agent's slow dynamics---their goals, emotional states, and strategic dispositions---all of which evolve on timescales of seconds to hours. Social cognition, in this framework, is selective sync with the slow manifold of another high-dimensional system. The prediction is not computed from a stored ``theory of mind'' but maintained through continuous coupling---gaze tracking, prosodic entrainment, postural mirroring---that keeps the observer's internal dynamics aligned with the slow modes of the observed agent. When social coupling is disrupted (the other agent becomes unpredictable, or the observer's attention is diverted), the synchronized manifold degrades, and social prediction fails.
-
-This level corresponds to what Igamberdiev \cite{igamberdiev2017} describes as reflexive modeling of externality: the organism generates an internal model of its environment that is itself subject to reflective evaluation and control. The ``model'' is still the synchronization manifold, but the organism now maintains and manages that manifold deliberately---choosing which environmental processes to track, allocating dimensional resources among competing synchronization targets, and monitoring the quality of synchronization to detect when reallocation is needed. Rabinovich's winnerless competition framework \cite{rabinovich2008} captures the dynamics of this allocation process. In winnerless competition, multiple metastable states (each corresponding to a synchronized configuration with a different environmental feature) compete for expression. No single state wins permanently; instead, the system trajectories through a sequence of metastable states, dwelling in each before transitioning to the next. Attentional switching, in this account, is not a discrete selection event but a continuous transient trajectory through the space of possible synchronization configurations.
-
-\medskip
-
-The three-level hierarchy is not a taxonomy of organisms but of mechanisms. A single organism deploys all three simultaneously. A human navigating a crowded room passively synchronizes with ambient light and sound (entrainment through sensory surfaces), actively modulates gain on specific sensory channels (attending to a conversation partner's voice over background noise), and selectively allocates dimensional resources across social targets (tracking the intentions of multiple agents while maintaining a model of the room's spatial structure). Passive sync provides short-horizon, broad-spectrum prediction: many environmental features tracked shallowly. Selective sync provides long-horizon, narrow-spectrum prediction: a few environmental features tracked deeply. The total predictive capacity of the organism is the integral across all three levels---the sum of prediction horizons, weighted by the dimensional resources allocated to each synchronized mode.
-
-\section{Biological Case Studies}
-\label{sec:cases}
-
-The framework developed in Sections~\ref{sec:asymmetry}--\ref{sec:hierarchy} makes qualitative predictions about four quantities---$\tsync$, $\tenv$, $\tmeas$, and the resulting prediction horizon $\tpred$---that should be estimable from published experimental literature. This section examines four biological systems spanning molecular to cortical scales: bacterial chemotaxis, nematode thermotaxis, mammalian hippocampal navigation, and human cortical prediction (summarized in Table~\ref{tab:synthesis}). For each system, we identify the relevant timescales from published measurements and assess whether the ordering $\tsync < \tmeas < \tenv$ holds. These are order-of-magnitude estimates illustrating the plausibility of the timescale inequality, not precision tests of a fitted scaling law. The claim is structural---that the sync-measurement asymmetry organizes anticipatory behavior across scales---not that a universal quantitative relationship links $\tsync$ to $\tpred$ with fixed coefficients.
-
-\subsection{\textit{E.\ coli} chemotaxis}
-\label{sec:ecoli}
-
-\textit{Escherichia coli} navigates chemical gradients using a remarkably compact sensory-motor system. Five types of methyl-accepting chemotaxis proteins (MCPs)---Tar, Tsr, Trg, Tap, and Aer---form mixed clusters in the bacterial membrane, each sensitive to distinct chemoattractants and repellents \cite{sourjik2012}. Ligand binding at the receptor array modulates the autophosphorylation activity of the histidine kinase CheA, which phosphorylates the response regulator CheY. Phosphorylated CheY-P diffuses to the flagellar motor complex and biases switching between counterclockwise rotation (smooth runs) and clockwise rotation (tumbles). Superimposed on this fast signaling pathway is a slower methylation-demethylation cycle catalyzed by CheR and CheB, which adapts receptor sensitivity to the ambient ligand concentration and restores the system to its pre-stimulus operating point over a timescale of one to three seconds \cite{shimizu2010}.
-
-\paragraph{Timescale estimates.} The synchronization timescale $\tsync$ has two components. Receptor-ligand binding equilibrates on a timescale of milliseconds: the on-rate for aspartate binding to Tar is $\sim\!10^6$~M$^{-1}$s$^{-1}$, giving sub-millisecond equilibration at physiological ligand concentrations \cite{sourjik2012}. The downstream adaptation cascade---methylation, CheA activity modulation, and CheY-P equilibration---operates on a timescale of approximately one to three seconds \cite{shimizu2010}. The environmental autocorrelation time $\tenv$ is set by the spatial structure of the chemical gradient and the bacterium's swimming speed. Segall et al.\ \cite{segall1986} demonstrated that \textit{E.\ coli} performs temporal comparisons over a window of approximately three seconds, comparing recent receptor occupancy to current occupancy; this comparison is only useful if the gradient persists over the distance the bacterium traverses in that interval. At typical swimming speeds of $\sim\!20$~$\mu$m/s and gradient correlation lengths of tens to hundreds of micrometers, the gradient autocorrelation time experienced by the bacterium is on the order of seconds to tens of seconds. The measurement commitment time $\tmeas$ corresponds to the tumble-run decision: the interval required for the flagellar motor to commit to a rotational switch and for the resulting reorientation to be expressed in the bacterium's trajectory. Motor switching occurs on a timescale of approximately one second \cite{berg2004}.
-
-\paragraph{Timescale ordering.} The relevant ordering is: receptor binding ($\sim$ms) $\ll$ motor switching/adaptation ($\sim$1--3~s) $<$ gradient autocorrelation ($\sim$seconds to tens of seconds). The fast receptor dynamics ensure that the intracellular signaling state continuously tracks the local chemical environment---this is $\tsync$ at its fastest component. The adaptation cascade, operating on a one-to-three-second timescale, integrates gradient information over a temporal window matched to the bacterium's locomotor dynamics. The motor switching decision ($\tmeas \sim 1$~s) commits this integrated information to a discrete behavioral output. Because the gradient persists for longer than the adaptation timescale ($\tenv > \tsync$), the adapted methylation state of the receptor array carries information about gradient structure that the bacterium has not yet traversed.
-
-\paragraph{Prediction horizon.} The methylation state of the MCP array constitutes a form of molecular memory that reflects the gradient experienced over the preceding one to three seconds \cite{shimizu2010}. Because the gradient is spatially autocorrelated, this adapted state contains information about the chemical environment the bacterium will encounter in the near future---a prediction horizon of roughly one to three seconds, consistent with the temporal comparison window identified by Segall et al.\ \cite{segall1986}. This is passive synchronization in the taxonomy of Section~\ref{sec:hierarchy}: the coupling interface (receptor array plus adaptation cascade) entrains to environmental structure without any real-time modulation of coupling parameters. The ``prediction'' is not computed; it is a direct consequence of the match between the adaptation timescale and the gradient autocorrelation time.
-
-\subsection{\textit{C.\ elegans} thermotaxis}
-\label{sec:celegans}
-
-\textit{Caenorhabditis elegans} navigates thermal gradients with a nervous system of exactly 302 neurons and a fully mapped connectome. Despite this extreme compactness, the worm exhibits sophisticated thermotactic behavior: it migrates toward its cultivation temperature when placed on a thermal gradient, executes isothermal tracking near that temperature, and avoids temperatures associated with starvation \cite{mori1995}. Whole-brain calcium imaging by Kato et al.\ \cite{kato2015} revealed that the worm's neural dynamics during behavior lie on a low-dimensional manifold: the dominant principal components of population activity capture transitions between discrete behavioral states (forward locomotion, reversal, turning, dwelling), with the full repertoire of motor commands embedded in a manifold that can be described by approximately ten principal components accounting for most variance relevant to behavioral control. This low-dimensional manifold structure means that the worm's neural state space, though nominally 302-dimensional, is functionally compressed---the accessible dynamics occupy a low-dimensional subspace whose geometry encodes the motor command sequence.
-
-\paragraph{Timescale estimates.} The synchronization timescale $\tsync$ in thermotaxis has a sensory component and an integrative component. The AFD thermosensory neurons, the primary thermal sensors, respond to temperature changes with a latency of approximately 100~ms, exhibiting graded calcium signals that track the local thermal environment \cite{clark2006}. Clark et al.\ \cite{clark2006} demonstrated that AFD neurons encode multiple features of the thermal stimulus---absolute temperature, rate of temperature change, and the relationship between current temperature and the worm's cultivation temperature---through gain modulation of their response properties. The interneuron network (AIY, AIZ, RIA) that integrates AFD output and gates motor decisions operates on a timescale of seconds, consistent with the behavioral state transitions observed in the low-dimensional manifold dynamics \cite{kato2015}. The environmental autocorrelation time $\tenv$ is set by the thermal structure of the worm's natural habitat. In soil, thermal gradients arise from solar heating and moisture patterns, producing temperature fields that are autocorrelated on timescales of minutes to hours at the spatial scales relevant to \textit{C.\ elegans} locomotion ($\sim$mm to cm). The measurement commitment time $\tmeas$ corresponds to the turn or reversal decision: the time required for the worm to commit to a change in locomotor state. Behavioral state transitions in the Kato et al.\ \cite{kato2015} manifold dynamics occur on a timescale of approximately one to two seconds.
-
-\paragraph{Timescale ordering.} The ordering is: sensory response ($\sim$100~ms) $\ll$ behavioral commitment ($\sim$1--2~s) $\ll$ gradient autocorrelation ($\sim$minutes). This is a clear instance of $\tsync < \tmeas < \tenv$, with each timescale separated by roughly an order of magnitude from its neighbors. The fast sensory response ensures that the worm's internal dynamics are continuously coupled to the thermal field; the slower interneuron integration accumulates gradient information over seconds; the even slower environmental autocorrelation ensures that this accumulated information remains relevant over the timescale of behavioral navigation.
-
-\paragraph{Active synchronization.} Thermotaxis in \textit{C.\ elegans} illustrates the transition from passive to active sync described in Section~\ref{sec:active}. At the sensory level, AFD neurons passively entrain to the local thermal field through temperature-gated receptor currents. But the gain modulation demonstrated by Clark et al.\ \cite{clark2006}---in which AFD response properties shift depending on the worm's cultivation history---represents active modulation of the coupling interface. The worm does not simply track the ambient temperature; it adjusts the sensitivity of its thermal coupling based on prior experience, effectively tuning $\tsync$ for the temperature range that is behaviorally relevant. This active modulation extends the effective prediction horizon by concentrating synchronization resources on the portion of the thermal field that matters for navigation, rather than distributing them uniformly across all thermal fluctuations.
-
-\paragraph{Prediction horizon.} The adapted sensory state of the AFD neurons, combined with the interneuron integration of gradient direction over the preceding seconds, carries information about the thermal environment the worm will encounter as it continues along its current trajectory. The prediction horizon is on the order of seconds to tens of seconds---short relative to the environmental autocorrelation time (minutes), but sufficient to support the isothermal tracking and gradient-following behaviors that constitute thermotaxis. The low-dimensional manifold structure of the neural dynamics \cite{kato2015} suggests that the worm's prediction operates not through tracking the full thermal field but through maintaining a synchronized position on a low-dimensional behavioral manifold whose geometry reflects the gradient structure of the environment.
-
-\subsection{Mammalian hippocampus}
-\label{sec:hippocampus}
-
-The mammalian hippocampal formation encodes spatial and contextual information through populations of specialized neurons: place cells that fire at specific locations in an environment \cite{wilson1993}, grid cells that tile space with periodic firing fields, and head direction cells that encode the animal's orientation. The population-level representation is high-dimensional in a functional sense: the population vector formed by the joint activity of hundreds to thousands of simultaneously recorded neurons forms a spatial and contextual representation whose effective dimensionality scales with the complexity of the environment being navigated. In a simple linear track, a modest number of place cells suffices to tile the space; in a complex, multi-room environment with contextual cues, the population code recruits additional dimensions to disambiguate overlapping spatial configurations.
-
-\paragraph{Timescale estimates.} The synchronization timescale for hippocampal spatial representation has two components that must be distinguished. The \textit{setup time}---the formation of stable place fields during initial exploration of a novel environment---takes seconds to minutes, as Wilson and McNaughton \cite{wilson1993} demonstrated. Once place fields are established, the \textit{operative synchronization timescale} $\tsync$ is much faster: the hippocampal population continuously tracks the animal's position through ongoing sensory coupling (visual, proprioceptive, vestibular inputs), with the population vector updating on a timescale of tens to hundreds of milliseconds as the animal moves. It is this operative $\tsync$---within-trial entrainment after map formation---that is relevant to the predictive regime, not the initial setup time. The environmental autocorrelation time $\tenv$ is set by the stability of the spatial environment, which persists on timescales of minutes to hours for a typical foraging bout and much longer for stable home ranges. The measurement commitment time $\tmeas$ corresponds to the navigational choice at a decision point: the time required for the animal to commit to a trajectory at a junction, which occurs on a timescale of seconds.
-
-\paragraph{Timescale ordering.} Using the operative $\tsync$ (tens to hundreds of milliseconds for ongoing spatial tracking), the ordering is: spatial tracking ($\tsync$, $\sim$100~ms) $<$ navigational commitment ($\tmeas$, $\sim$seconds) $<$ environmental stability ($\tenv$, minutes to hours). This is a clear instance of $\tsync < \tmeas < \tenv$. The initial setup time (place field formation, seconds to minutes) is a one-time cost that establishes the synchronization manifold; once established, the operative timescale governs the predictive dynamics.
-
-\paragraph{Preplay: synchronization beyond the present.} The hippocampus exhibits a form of anticipatory dynamics that goes beyond passive spatial tracking. During sharp-wave ripple (SWR) events in quiet wakefulness, hippocampal place cell populations generate compressed sequential activity patterns. Critically, Dragoi and Tonegawa \cite{dragoi2011} demonstrated \textit{preplay}: the firing sequences observed during SWR events in a familiar environment contain patterns that correspond to trajectories through novel, not-yet-visited spatial locations. In subsequent work, Dragoi and Tonegawa \cite{dragoi2013} showed that multiple distinct novel spatial experiences could be preplayed before the animal ever encountered those environments. This preplay operates on a timescale of seconds (the duration of SWR events and the associated compressed sequences).
-
-The distinction between preplay and replay is critical for the synchronization framework. Foster and Wilson \cite{foster2006} demonstrated reverse replay---backward firing sequences corresponding to recently traversed paths---during awake SWR events. Reverse replay is a consolidation mechanism: it revisits past experience, not future possibility. Preplay, by contrast, represents the hippocampal network generating forward sequences through spatial configurations that have not yet been experienced. In the language of this framework, preplay reflects the synchronization of hippocampal dynamics with the statistical structure of spatial environments in general: the network has entrained to the regularities of navigable space (corridors, open fields, boundaries) through accumulated experience, and this entrained structure generates predictions about novel environments that share those regularities.
-
-\paragraph{Prediction horizon.} The hippocampal prediction horizon operates on two timescales. Continuous spatial tracking provides a short-horizon prediction (seconds) based on the animal's current trajectory and the persistence of the spatial environment. Preplay during SWR events provides a longer-horizon anticipatory capacity---on the order of seconds within each replay event, but drawing on spatial regularities that persist over the animal's lifetime of navigational experience. This represents a transition from passive synchronization (place field formation through direct exploration) to active selection (SWR-mediated preplay of specific trajectories), consistent with the hierarchy developed in Section~\ref{sec:hierarchy}.
-
-\subsection{Human cortical prediction}
-\label{sec:cortex}
-
-The preceding three case studies are grounded in specific, quantitative experimental measurements. This final case is presented as bounded extrapolation: an illustration of where the framework points when extended to the most complex biological system, not a quantitative empirical test. The estimates here are correspondingly uncertain, and the section is intended to mark the framework's conceptual reach rather than its current empirical precision.
-
-Human cortical dynamics involve cross-regional synchronization across networks spanning prefrontal, temporal, parietal, and sensorimotor cortices. The effective dimensionality of cortical population activity varies enormously across studies and measurement modalities, with estimates ranging from $\sim\!10^2$ (local circuit recordings) to $\sim\!10^4$ or more (whole-brain imaging reconstructions), depending on the spatial and temporal resolution of the recording and the behavioral task. Prefrontal circuits gate which sensory and association areas achieve coherent oscillatory coupling \cite{fries2005}, implementing the selective synchronization described in Section~\ref{sec:selective}: the cortex dynamically allocates its coherence bandwidth across environmental features, social agents, and internal goals.
-
-\paragraph{Timescale estimates.} The synchronization timescale $\tsync$ is not a single value at the cortical level but a variable under attentional and executive control. Gamma-band coherence between prefrontal and sensory cortices can be established or released on timescales of tens to hundreds of milliseconds; beta-band synchronization across motor planning networks operates on similar timescales; slower oscillatory modes (theta, alpha) coordinate across larger cortical distances on timescales of hundreds of milliseconds to seconds. The environmental autocorrelation time $\tenv$ for the domains that cortical prediction addresses---social interactions, strategic planning, narrative comprehension---spans hours to years. The measurement commitment time $\tmeas$ for cortical output---a motor plan, a verbal report, a saccade---is on the order of seconds, constrained by the bandwidth of the motor output channels.
-
-\paragraph{Framework assessment.} The inequality $\tsync < \tmeas$ plausibly holds: cortical synchronization can be established faster than a motor plan can be committed. The inequality $\tmeas < \tenv$ holds by a wide margin for the slowly evolving social and environmental structures that human cognition addresses. The resulting prediction horizon is, in principle, the longest of any biological system---the cortex can maintain synchronized models of environmental structure that persists for hours, days, or longer. But ``prediction horizon'' becomes difficult to operationalize at this scale. Unlike the bacterium's gradient tracking or the worm's isothermal navigation, cortical prediction engages representational structures whose relationship to specific future environmental states is mediated by layers of abstraction. The framework identifies the mechanism (selective synchronization with slow environmental modes) and the timescale ordering ($\tsync < \tmeas < \tenv$), but does not claim that these order-of-magnitude estimates constitute a quantitative test comparable to the molecular and neural cases.
-
-\paragraph{Selective sync and social prediction.} Human social cognition exemplifies selective synchronization at its most extreme: predicting the behavior of another agent requires synchronizing with the slow dynamics of that agent's goals, intentions, and emotional states, all of which evolve on timescales of minutes to hours and are accessible only through noisy, low-bandwidth coupling channels (facial expression, prosody, gaze direction). The framework predicts that social prediction should be most accurate when coupling channels are rich and sustained (face-to-face interaction) and should degrade when coupling is impoverished (text-only communication) or intermittent (infrequent contact). These qualitative predictions are consistent with the social cognition literature but do not, at present, constitute a quantitative test of the synchronization framework.
+\textbf{Selective synchronization} adds dynamic reallocation across multiple environmental features. Cortical attention exemplifies this: prefrontal circuits gate which sensory streams achieve cross-regional coherence \cite{fries2005}, with working memory maintained through discrete gamma and beta bursts \cite{miller2018,lundqvist2016}. Social prediction is selective sync at its most demanding---tracking another agent's slow dynamics through noisy, low-bandwidth coupling channels (gaze, prosody, facial expression). This corresponds to Igamberdiev's reflexive modeling of externality \cite{igamberdiev2017} and Rabinovich's winnerless competition \cite{rabinovich2008}: attentional switching as continuous transient trajectories through synchronization configuration space.
 
 \begin{table}[H]
 \centering
-\caption{Timescale estimates across four biological systems. The ordering $\tsync < \tmeas < \tenv$ defines the predictive regime: the organism's internal state carries information about future environmental states that has not yet been registered through any discrete output channel. $^*$Hippocampal $\tsync$ is the operative (ongoing tracking) timescale; initial place field formation takes seconds to minutes (see text).}
+\caption{Timescale estimates across biological systems. The ordering $\tsync < \tmeas < \tenv$ defines the predictive regime.}
 \label{tab:synthesis}
-\begin{tabular}{l c c c c}
+\begin{tabular}{l c c c c l}
 \toprule
-\textbf{System} & $\boldsymbol{\tsync}$ & $\boldsymbol{\tenv}$ & $\boldsymbol{\tmeas}$ & $\boldsymbol{\tpred}$ \\
+\textbf{System} & $\boldsymbol{\tsync}$ & $\boldsymbol{\tenv}$ & $\boldsymbol{\tmeas}$ & $\boldsymbol{\tpred}$ & \textbf{Sync level} \\
 \midrule
-\textit{E.\ coli} & $\sim$ms & $\sim$10\,s & $\sim$1\,s & $\sim$1--3\,s \\
-\textit{C.\ elegans} & $\sim$100\,ms & $\sim$min & $\sim$1--2\,s & $\sim$s--10\,s \\
-Hippocampus & $\sim$100\,ms$^*$ & $\sim$min--hr & $\sim$s & $\sim$s--min \\
-Cortex & variable & $\sim$hr--yr & $\sim$s & variable \\
+\textit{E.\ coli} & $\sim$ms & $\sim$10\,s & $\sim$1\,s & $\sim$1--3\,s & Passive \\
+\textit{C.\ elegans} & $\sim$100\,ms & $\sim$min & $\sim$1--2\,s & $\sim$s--10\,s & Active \\
+Hippocampus & $\sim$100\,ms & $\sim$min--hr & $\sim$s & $\sim$s--min & Active/Selective \\
+Cortex & variable & $\sim$hr--yr & $\sim$s & variable & Selective \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\bigskip
+A single organism deploys all three levels simultaneously. A human navigating a crowded room passively synchronizes with ambient light and sound, actively modulates gain on a conversation partner's voice, and selectively allocates dimensional resources across social targets. The total predictive capacity is the integral across all levels.
 
-Across all four systems, the ordering $\tsync < \tmeas$ holds: continuous coupling entrains internal dynamics to environmental structure faster than discrete measurement commits that structure to an irreversible behavioral output. The prediction horizon correlates with the persistence time of the slowest synchronized mode, from seconds in bacterial chemotaxis to potentially hours or longer in cortical social prediction. The framework does not predict a universal scaling law linking these timescales---the specific values of $\tsync$, $\tmeas$, $\tenv$, and $\tpred$ depend on the coupling architecture, the environmental statistics, and the organism's control over the synchronization process. What is universal is the structural asymmetry: continuous coupling operates through the full bandwidth of the organism-environment interface, while measurement commitment is bottlenecked through low-dimensional output channels. This asymmetry generates the appearance of anticipation whenever $\tsync < \tmeas$, regardless of the specific biological substrate.
 
-\section{Prediction Without Coding}
-\label{sec:predictive}
+%% ═══════════════════════════════════════════════════════════════════
+\section{The \textit{C.\ elegans} Test}
+\label{sec:celegans}
 
-\subsection{The category error}
-\label{sec:category_error}
+The synchronization framework makes a specific, testable prediction: if the connectome is a low-dimensional projection of a high-dimensional system, then connectome-only simulations should carry environmental information (mutual information should be preserved) but should fail at coordination (motor output should be incoherent). Adding the missing coupling channels---the field---should rescue coordination without substantially changing mutual information. And this rescue should depend on criticality: it should require the system to operate near the synchronization phase transition.
 
-The predictive processing framework---predictive coding \cite{rao1999}, the free-energy principle \cite{friston2010}, active inference \cite{friston2017}---treats prediction as computation. The brain generates top-down expectations, compares them to ascending sensory signals, propagates prediction errors, updates an internal generative model. The framework is mathematically elegant and has unified a remarkable range of neural phenomena under a single principle: minimize surprise, or equivalently, minimize variational free energy.
+\subsection{Three models, one connectome}
+\label{sec:three_models}
 
-We argue that this framework mistakes the shadow for the thing. \textit{Coding} is what happens when high-dimensional oscillatory dynamics collapse to a discrete output---it is the \textit{product} of dimensional reduction at the measurement boundary, not the process that generates prediction. The predictive processing framework observes the low-dimensional residuals of high-dimensional synchronization and attributes them to an inferential process. But the prediction was already present in the synchronized manifold before any coding occurred. The ``prediction error'' is not a failed inference---it is the discrepancy between continuous synchronized dynamics and their discretized shadow at the output boundary.
+We test this prediction on the complete \textit{C.~elegans} connectome from the OpenWorm project: 448 neurons, 4{,}681 chemical synapses, 2{,}698 gap junctions \cite{varshney2011}. Neuron positions along the body axis are assigned from the WormAtlas database \cite{altun2024}. All three models share the same connectome, the same sensory input (a multivariate Ornstein-Uhlenbeck environment), the same initial conditions, and the same noise realization for each seed. The only difference is which coupling channels are active.
 
-Consider the scope of the claim. Predictive coding requires, at minimum, a generative model, a hierarchical architecture, and an error-propagation mechanism. These structures exist in vertebrate cortex. They do not exist in bacteria, plants, cell collectives, or invertebrates with compact nervous systems---yet all of these systems exhibit anticipatory behavior. The predictive processing framework has no account of prediction in organisms that lack the computational architecture it requires. The synchronization framework provides a complete account: prediction at every biological scale arises from continuous coupling, not from inference.
+\textbf{Model A---Connectome only.} Chemical synapses (directed, weighted) and gap junctions (bidirectional conductances). This is approximately what OpenWorm/c302 simulates. The wiring diagram IS the model. Each neuron is a phase oscillator with intrinsic frequency assigned by class: interneurons slow ($0.7$--$1.0$~Hz), sensory moderate ($0.9$--$1.2$~Hz), motor fast ($1.0$--$1.3$~Hz). Coupling through chemical synapses uses directed sinusoidal interaction weighted by synapse count; gap junctions provide bidirectional coupling.
 
-\subsection{What predictive coding actually describes}
-\label{sec:what_pc_describes}
+\textbf{Model B---Connectome + ephaptic field.} Same connectome plus distance-dependent coupling between \textit{all} neuron pairs based on their physical positions along the body axis. Ephaptic coupling falls off as a Gaussian with characteristic length $\sigma = 0.15$ body units. Neurons that are spatially close influence each other even without synaptic connections. This adds a continuous, high-dimensional coupling channel that the connectome does not capture \cite{anastassiou2011}.
 
-If prediction is synchronization, what is predictive coding describing? We propose that it describes the narrow regime where synchronization fails and biology falls back on computation---a regime that is real but rare.
+\textbf{Model C---Full field model.} Same as B plus: (i) a slow, global neuropeptide-like modulatory field with 1-second time constant, coupling all neurons through a mean-field broadcast signal \cite{bentley2016}; and (ii) proprioceptive feedback from motor output back to sensory neurons, closing the prediction-action loop \cite{wen2012}. This is the high-dimensional model: the worm as a coupled oscillatory field, not just a circuit.
 
-Computation becomes necessary in three specific conditions. First, \textit{adversarial environments}: when coupling channels carry systematically misleading structure (predator feints, Batesian mimicry, social deception), synchronization produces the wrong prediction, and the organism must compare the synchronized state against an internal model of what honest signals should look like. This is an irreducibly computational operation. Second, \textit{absent coupling}: when the organism must predict in dimensions to which it is not currently coupled---counterfactual reasoning, planning in novel environments, imagining a chess position---there is no synchronization channel, and internal simulation is the only option. Third, \textit{impoverished coupling}: when the coupling bandwidth is too narrow to carry the relevant environmental structure, as in text-only communication where the high-dimensional facial coupling surface is unavailable.
+The three models are run at three coupling regimes (subcritical, critical, supercritical) with five independent random seeds per condition. Metrics are: future mutual information $I_{\mathrm{pred}}$ with the sensory environment, effective dimensionality $\Deff$, and cross-correlation between motor neuron classes (VA-VB, VA-DA, DA-DB)---the coordination metrics that locomotion requires.
 
-Note what is \textit{not} on this list. Catching a thrown ball involves continuous visuomotor coupling with a smooth, highly autocorrelated trajectory ($\tenv \gg \tsync$)---the synchronization framework accounts for the anticipatory dynamics without requiring a generative model of projectile physics \cite{wolpert1998}. Face-to-face social prediction operates through an extraordinarily high-dimensional coupling surface (hundreds of facial muscles, micro-expressions, pupil dynamics, gaze, prosody) through which continuous synchronization carries anticipatory content. Sensorimotor coordination, spatial navigation, emotional contagion, and rhythmic entrainment in music and conversation are all cases where the synchronization framework provides a complete account of the anticipatory dynamics. The predictive coding framework can redescribe these phenomena in computational language, but the redescription adds architectural requirements (generative models, hierarchical error propagation, precision weighting) that the synchronization account does not need. Predictive coding is most necessary---most diagnostic and most explanatorily powerful---in the regime where synchronization is insufficient.
+\subsection{Results}
+\label{sec:results}
 
-\subsection{The redescription problem}
-\label{sec:redescription}
+\paragraph{Mutual information is similar.} Across all regimes and models, predictive content is comparable: $I_{\mathrm{pred}} \approx 0.47$ nats, with no significant difference between models (Figure~\ref{fig:coordination}b). The connectome alone provides sufficient channels for environmental information to propagate through the synaptic network. This is not surprising---the connectome was selected by evolution precisely for its ability to carry sensory signals.
 
-The free-energy principle's central injunction---minimize surprise---can be restated as \textit{maintain synchronization}: keep $\tsync < \tenv$. An organism that minimizes variational free energy is, in dynamical terms, maintaining its coupling with environmental structure. This is not a new insight---it is a redescription of coupling dynamics in the language of variational inference. The mathematical formalism is correct: the same equations describe both synchronization maintenance and surprise minimization. But the interpretation differs fundamentally.
+\paragraph{The field coupling shifts the effective critical point.} The order parameter $r$ (mean phase coherence) reveals the mechanism. At $K_{\mathrm{gap}} = 1.2$, the connectome-only model is subcritical ($r = 0.13 \pm 0.03$), while Model B achieves near-critical synchronization ($r = 0.27 \pm 0.06$) and Model C reaches $r = 0.28 \pm 0.07$ (Table~\ref{tab:results}). The field coupling doubles the order parameter at the same synaptic coupling strength---it shifts the critical point downward, so that the system achieves synchronization at lower coupling.
 
-Under predictive coding, the organism \textit{infers} the state of the environment through an internal model. Under the synchronization framework, the organism \textit{is coupled to} the environment through continuous dynamics. The first implies computation---discrete operations over representations. The second implies physics---continuous entrainment through a coupling interface. The first requires a generative model. The second requires only a coupling surface. The first is phylogenetically recent and architecturally expensive. The second is as old as chemistry and as cheap as a membrane.
+\paragraph{Motor coordination follows the order parameter.} At the critical regime, Model B produces consistently positive VA-VB coordination ($0.36 \pm 0.10$, all five seeds positive) while Model A shows unreliable coordination ($0.26 \pm 0.14$, high seed-to-seed variance including near-zero values). The effect is most dramatic at higher coupling ($K_{\mathrm{gap}} = 3.0$): VA-VB correlation reaches $0.85 \pm 0.08$ with ephaptic coupling versus $0.47 \pm 0.29$ without (Figure~\ref{fig:coordination}a). Critically, the field-coupled models also have far lower variance---coordination is not just higher but more reliable, as reflected in the reduced standard error across seeds.
 
-The predictive coding framework has been productive precisely because it correctly identifies the mathematical structure of organism-environment coupling. The question is whether the computational interpretation of that structure---inference over generative models---is the most parsimonious account, or whether it imports unnecessary ontological commitments. When the same mathematical relationship between organism and environment can be described as either ``variational inference'' or ``continuous entrainment,'' the choice between these descriptions is not merely terminological. The inferential interpretation requires internal models, approximate posteriors, and hierarchical error propagation. The synchronization interpretation requires only a coupling surface and the physics of entrainment. For organisms without the neural architecture to plausibly implement hierarchical Bayesian inference---bacteria, plants, cell collectives---the synchronization account is not just simpler; it is the only account that applies.
+\paragraph{Three regimes.} Figure~\ref{fig:coordination}c shows VA-VB coordination across all three coupling regimes. In the subcritical regime ($K_{\mathrm{gap}} = 0.4$, $r < 0.1$), all models show weak, inconsistent coordination---too disordered for any coupling channel to create coherent motor output. At the critical regime, the field models pull ahead. At the supercritical regime, the gap widens dramatically: the field-coupled models approach $r = 0.85$ while the connectome-only model remains below $0.50$ with high variance. The field does not merely add coordination---it makes coordination robust.
 
-\subsection{Coding as dimensional collapse}
-\label{sec:coding_collapse}
+\paragraph{Effective dimensionality.} The field coupling produces a striking dimensional compression: $\Deff$ drops from 24 (connectome only) to 10 (field models) at the critical regime, and from 8 to 5 at the supercritical regime. The field-coupled system trades uninformative dimensions for environment-correlated modes---fewer degrees of freedom, but each one carrying coordinated, functionally relevant information.
 
-The term ``predictive \textit{coding}'' contains its own diagnosis. A code is a low-dimensional representation of high-dimensional structure---it is the product of dimensional collapse at a measurement boundary. In the framework developed in Sections~\ref{sec:asymmetry}--\ref{sec:hierarchy}, coding is what happens at $\tmeas$: continuous, high-dimensional synchronized dynamics are collapsed to a discrete, low-dimensional output. The code is the \textit{result} of prediction, not the \textit{mechanism}.
+\begin{table}[H]
+\centering
+\caption{Quantitative results across coupling regimes. Mean $\pm$ SEM over 5 seeds per condition. MI is comparable across all conditions; coordination and order parameter diverge with field coupling.}
+\label{tab:results}
+\begin{tabular}{l l c c c c}
+\toprule
+\textbf{Regime} & \textbf{Model} & $\boldsymbol{r}$ & $\boldsymbol{I_{\mathrm{pred}}}$ \textbf{(nats)} & \textbf{VA-VB} & $\boldsymbol{\Deff}$ \\
+\midrule
+Subcritical & A: Connectome & $0.06$ & $0.47$ & $0.06 \pm 0.17$ & 38 \\
+($K_{\mathrm{gap}} = 0.4$) & B: + Ephaptic & $0.09$ & $0.48$ & $0.14 \pm 0.20$ & 36 \\
+ & C: + Full field & $0.09$ & $0.48$ & $0.10 \pm 0.21$ & 36 \\
+\midrule
+Critical & A: Connectome & $0.13$ & $0.48$ & $0.26 \pm 0.14$ & 24 \\
+($K_{\mathrm{gap}} = 1.2$) & B: + Ephaptic & $0.27$ & $0.47$ & $0.36 \pm 0.10$ & 10 \\
+ & C: + Full field & $0.28$ & $0.46$ & $0.32 \pm 0.14$ & 10 \\
+\midrule
+Supercritical & A: Connectome & $0.35$ & $0.47$ & $0.47 \pm 0.29$ & 8 \\
+($K_{\mathrm{gap}} = 3.0$) & B: + Ephaptic & $0.51$ & $0.47$ & $\mathbf{0.85 \pm 0.08}$ & 5 \\
+ & C: + Full field & $0.49$ & $0.47$ & $\mathbf{0.84 \pm 0.09}$ & 5 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-This distinction matters. If prediction is coding, then understanding prediction requires understanding the code: the representational format, the inference algorithm, the error-correction mechanism. If prediction is synchronization, then understanding prediction requires understanding the coupling: the interface bandwidth, the entrainment timescale, the autocorrelation of the shared manifold. These are different research programs with different empirical commitments. The coding program looks for representations. The synchronization program looks for coupling channels.
-
-The oscillator field simulation demonstrates this directly (Figure~\ref{fig:code_collapse}). The full continuous internal state of a 625-oscillator network coupled to a structured environment carries $\sim$14 nats of future mutual information with the environment. An explicit commit channel---projecting the internal state onto 5 dimensions, quantizing to 4 bits, and updating at discrete intervals---retains only $\sim$2 nats. Coding destroys $\sim$85\% of the predictive content. The information that coding loses is precisely the distributed, high-dimensional correlation structure that lives in the phase relationships among coupled oscillators---the structure that the synchronization framework identifies as the substrate of prediction.
+\paragraph{Motor time series.} Figures~\ref{fig:coordination}d,e show representative VA motor neuron traces at the critical regime. The connectome-only model produces noisy, unstructured activation---neurons fire with high variance despite receiving the same sensory input. The full field model produces more coordinated oscillatory patterns, consistent with the spatially organized motor commands that locomotion requires.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{simulations/figures/fig3_code_collapse.pdf}
-\caption{Prediction lives upstream of code. \textbf{(a)} Future mutual information $I(X_{\mathrm{int}}(t); Y_{\mathrm{env}}(t{+}\Delta t))$ for the full continuous internal state of a 625-oscillator network (red, solid) versus three explicit commit channels with different bandwidths (dashed). Coding destroys most predictive content. \textbf{(b)} Information lost by coding at short prediction lag: a 5-dimensional, 4-bit commit channel loses $\sim$12 nats of the 14.4 nats available in the continuous state. Even a 20-dimensional channel loses $\sim$8 nats.}
-\label{fig:code_collapse}
+\includegraphics[width=\textwidth]{simulations/figures/fig_coordination.pdf}
+\caption{\textit{C.~elegans}: motor coordination requires field coupling, not just the connectome. Same 448-neuron connectome, three models, five seeds per condition; error bars show SEM. \textbf{(a)} Motor neuron cross-correlation at the critical coupling regime ($K_{\mathrm{gap}} = 1.2$). Ephaptic coupling produces consistently positive coordination with lower variance. \textbf{(b)} Predictive content (future MI) is similar across models (${\sim}0.47$ nats). \textbf{(c)} VA-VB coordination across coupling regimes. The gap between models widens with coupling strength: at $K_{\mathrm{gap}} = 3.0$, field models reach $\rho = 0.85$ while connectome-only shows $0.47$ with high variance. \textbf{(d,e)} Representative VA motor neuron traces at the critical regime.}
+\label{fig:coordination}
 \end{figure}
 
-Two decades of searching for the neural code of prediction have produced elegant theory and limited empirical confirmation. The core predictions of predictive coding---top-down prediction signals, precision-weighted error propagation, hierarchical generative models---remain difficult to distinguish empirically from alternative accounts of the same neural phenomena. The synchronization framework suggests why: the neural activity that predictive coding interprets as ``prediction signals'' and ``error signals'' may be the low-dimensional shadow of high-dimensional synchronization dynamics, observable at the measurement boundary but not diagnostic of the underlying mechanism. Looking for the code is looking at the commit events. The prediction lives in the oscillatory dynamics between commits.
+\subsection{Interpretation}
+\label{sec:interpretation}
 
-\section{Discussion}
-\label{sec:discussion}
+A worm that ``knows'' where the food is but cannot coordinate its muscles to crawl there has not predicted anything in any biologically meaningful sense. Prediction without coordination is like knowing the answer but being unable to speak. The mutual information metric---the standard measure in computational neuroscience---misses this entirely because it measures what the internal state \textit{contains}, not what the organism can \textit{do} with it.
 
-\textit{Simulation model.} The simulation results presented in Figures~\ref{fig:sync_measurement}, \ref{fig:gap}, and \ref{fig:code_collapse} use a two-dimensional lattice of $25 \times 25 = 625$ coupled phase oscillators driven by a spatiotemporal Ornstein-Uhlenbeck environment with autocorrelation time $\tenv = 4$\,s and spatial correlation length $L = 4$ lattice units. Oscillators interact with nearest neighbors (coupling $K_{\mathrm{nn}} = 2$) and with the local environment signal (coupling $K$ swept from 0 to 45). Phase dynamics follow $\dot{\theta}_i = \omega_i + K_{\mathrm{nn}} \sum_j \sin(\theta_j - \theta_i)/4 + K \sin(\theta_{\mathrm{env},i} - \theta_i) + \eta_i(t)$, where $\eta_i$ is Gaussian white noise ($\sigma = 0.15$). The predictor state is the internal oscillator field $[\cos\theta_i, \sin\theta_i]_{i=1}^N$ (1250 state dimensions), not the organism-environment tracking field, ensuring that future mutual information $I(X_{\mathrm{int}}(t); Y_{\mathrm{env}}(t{+}\Delta t))$ measures what the organism knows from its own dynamics rather than what the environment persists. MI is estimated via Gaussian covariance with Ledoit-Wolf shrinkage. Observer dimensionality uses nested PCA truncation on the internal state, guaranteeing monotonicity. The commit channel (Figure~\ref{fig:code_collapse}) projects the internal state onto $d$ principal components, quantizes each to $b$ bits, and updates at discrete intervals, simulating $\tmeas$. A second simulation (Figure~\ref{fig:celegans}) uses the complete \textit{C.~elegans} connectome from the OpenWorm project, comparing discrete (LIF) and oscillatory (coupled phase) architectures on the same 448-neuron network with a frequency hierarchy assigned by neuron class. Code is available in the supplementary material.
+The connectome is necessary. It provides the synaptic specificity that routes sensory information to appropriate interneurons and motor neurons. But it is not sufficient for reliable coordination. The field coupling provides the continuous, spatially graded medium through which distributed correlations become coherent action. The effect is quantitative but functionally significant: at the critical coupling regime, the field doubles the order parameter and halves the effective dimensionality, producing a structured, low-dimensional motor manifold from what would otherwise be a high-dimensional, noisy state space.
 
-This paper began from a specific gap: biological prediction is almost universally described as computation over an internal model, yet organisms without anything resembling a computational architecture exhibit anticipatory behavior. The sync-measurement asymmetry provides an alternative account. When continuous coupling entrains internal dynamics to environmental structure faster than discrete measurement can commit that structure to an output ($\tsync < \tmeas$), the organism carries future-relevant information it has not yet ``registered.'' Prediction, under this account, is not a computational achievement but a physical consequence of the mismatch between the bandwidth of continuous coupling and the bottleneck of irreversible commitment.
+The dimensional compression is particularly telling. The connectome-only model at criticality has $\Deff \approx 24$: many weakly correlated modes carrying environmental information but not organized into coherent motor patterns. The field-coupled models have $\Deff \approx 10$: fewer modes, but each one coordinated through the spatially graded ephaptic channel. The field does not add information---it organizes the information the connectome already carries into a form the body can use.
 
-\subsection{Connection to the BioSystems program}
-\label{sec:connection}
+This result has direct implications for the OpenWorm project and for computational neuroscience more broadly. Connectome-based models will not produce reliably coordinated behavior by adding more detail to the wiring diagram---more synaptic weights, better conductance models, finer temporal resolution. The missing ingredient is not computational precision but physical coupling channels that the graph abstraction discards. A complete model of \textit{C.~elegans} behavior requires not a more detailed graph but a fundamentally different computational object: a field simulation in which the connectome is one coupling channel among several, embedded in a continuous spatiotemporal medium.
 
-This paper closes an arc that has developed across four prior contributions to this journal. The \textit{Limits of Falsifiability} paper \cite{todd2025falsifiability} established that high-dimensional systems impose measurement limits: below certain thresholds, the internal structure of a system is epistemically inaccessible to low-dimensional observers. \textit{Timing Inaccessibility} \cite{todd2025demon} showed that irreversible state registration---measurement in the thermodynamic sense---is expensive, requiring at least $\kB T \ln 2$ per bit and imposing a physical floor on $\tmeas$. \textit{Intelligence as High-Dimensional Coherence} \cite{todd2025intelligence} argued that systems with $\Deff \gg 1$ carry rich correlational structure across many coupled subsystems, structure that low-bandwidth observers cannot resolve but that the system itself can exploit. \textit{Coherence Time} \cite{todd2026coherence} derived that oscillatory coordination has its own physical timescale---the time to establish coherent phase relationships across an assembly---setting a floor on $\tsync$ that depends on coupling strength, topology, and coordination depth.
 
-The present paper connects these results into a single inequality. The measurement floor ($\tmeas$) from thermodynamic analysis meets the synchronization floor ($\tsync$) from oscillator dynamics. When the environment decorrelates slowly enough ($\tenv > \tsync$), the organism's internal state carries predictive content. When synchronization outpaces measurement ($\tsync < \tmeas$), the organism appears anticipatory to any observer limited to discrete readout. The research program now traces a complete trajectory: from what high-dimensional systems lose (measurement information, falsifiability), through what they cost (coherence time, thermodynamic expenditure), to what they gain (predictive capacity that emerges from the asymmetry between coupling and commitment).
+%% ═══════════════════════════════════════════════════════════════════
+\section{The Observational Gap}
+\label{sec:gap}
 
-\subsection{Entropy, intelligence, and the observational gap}
-\label{sec:entropy}
+The \textit{C.~elegans} result illustrates a general principle: the connectome is a low-dimensional measurement of a high-dimensional system, and the measurement systematically underestimates what the system contains. This section demonstrates the phenomenon directly.
 
-The sync-measurement asymmetry has an implication for how we account for thermodynamic order in biological systems. Living systems appear to create order from disorder---repairing damage, maintaining improbable configurations, navigating to resources. This appearance has generated centuries of discussion, from Maxwell's demon through Schr\"odinger's ``negative entropy'' to modern information-thermodynamic accounts \cite{still2012}. The synchronization framework suggests that apparent local entropy reversal is, in part, an artifact of observer-limited entropy accounting.
+A coupled oscillator field ($25 \times 25 = 625$ oscillators, spatiotemporal OU environment, $\tenv = 4$\,s, coupling $K = 22$) is observed at varying resolution: from a single oscillator ($d_{\mathrm{obs}} = 1$) to the full system ($d_{\mathrm{obs}} = 625$). Observer dimensionality uses nested PCA truncation on the internal state $[\cos\theta_i, \sin\theta_i]$, guaranteeing monotonicity. The mutual information $I_{\mathrm{pred}}(\Delta t)$ is computed at each resolution via Gaussian covariance estimation.
 
-A large coherent system contains higher-order correlations that a lower-dimensional measurement channel cannot fully resolve. Synchronization creates distributed correlations across many coupled degrees of freedom---phase relationships, amplitude correlations, frequency locks---that are physically real and thermodynamically relevant. But coarse-grained observation necessarily destroys some of this correlation structure \cite{todd2025falsifiability}: every projection from high-D to low-D discards degrees of freedom that may carry mutual information with the environment. The observer's entropy bookkeeping therefore omits the unresolved correlations. When the system later converts those hidden correlations into ordered behavior---navigating to food, avoiding a predator, repairing a lesion---the observer experiences this as order appearing without a corresponding information source.
-
-There is no second-law violation. The total system-plus-environment entropy balance is maintained: the correlations were acquired through coupling (at thermodynamic cost), stored in the synchronized manifold, and spent at the behavioral output. But the observer-relative entropy accounting is incomplete, because the observer's measurement resolution is lower than the system's internal dimensionality ($D_{\mathrm{observer}} \ll \Deff$). The coarse-grained entropy deficit---the gap between the mutual information the system actually carries and the mutual information the observer can verify---produces an appearance of local entropy reversal that grows with the dimensionality gap. The more dimensions the system uses for synchronization, and the fewer the observer can resolve, the more ``miraculous'' the system's order-producing behavior appears. The miracle is undermeasurement, not a thermodynamic exception (Figure~\ref{fig:gap}).
+The result (Figure~\ref{fig:gap}) is stark. The full system carries ${\sim}14$ nats of predictive content. An observer with $d_{\mathrm{obs}} = 5$ measures ${\sim}5$ nats. The shaded region between them is \textit{hidden correlation structure}: mutual information the system contains but the observer cannot verify. The gap is monotonic in observer resolution and opens once coupling is established---it is a property of the sync-measurement asymmetry, not of the specific system.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{simulations/figures/fig2_observational_gap.pdf}
-\caption{The observational gap. Simulation of a $25 \times 25$ oscillator field coupled to a spatiotemporal environment at $K = 22$. \textbf{(a)} Future mutual information $I_{\mathrm{pred}}(\Delta t)$ measured at different observer resolutions ($d_{\mathrm{obs}}$ = number of oscillators whose state is retained; each contributes two PCA dimensions from $[\cos\theta_i, \sin\theta_i]$). The full system (yellow, $d = 625$) carries far more predictive information than any low-dimensional observer can verify. \textbf{(b)} Short-lag $I_{\mathrm{pred}}$ as a function of observer dimensionality. The red shaded region is hidden correlation structure---mutual information the system contains but the observer cannot measure. \textbf{(c)} The information gap opens once coupling is established and depends on both coupling strength and observer resolution: stronger synchronization creates distributed correlations that low-dimensional observers miss, though the relationship is non-monotonic at high coupling strengths.}
+\caption{The observational gap. \textbf{(a)} Future MI at different observer resolutions. The full system (yellow) carries far more predictive information than any low-dimensional observer can verify. \textbf{(b)} Short-lag MI as a function of observer dimensionality. The red shaded region is hidden correlation structure. \textbf{(c)} The gap depends on coupling strength and observer resolution.}
 \label{fig:gap}
 \end{figure}
 
-This implies a hierarchy of observer resolution: the effective dimensionality of conscious perception---operating through massively parallel, continuously coupled sensory surfaces---is likely far higher than that of any falsifiable scientific measurement \cite{todd2025falsifiability}, which must collapse its observations to discrete, reproducible outputs. The coarse-grained entropy deficit is therefore larger for scientific observers than for conscious ones, which may explain why living systems appear more ``miraculous'' to scientific analysis than to direct experience.
+This has implications for how we account for thermodynamic order in biology. Synchronization creates distributed correlations across many coupled degrees of freedom that coarse-grained observation necessarily destroys \cite{todd2025falsifiability}. When the system later converts those hidden correlations into ordered behavior, the observer experiences this as order appearing without a corresponding information source. There is no second-law violation---the correlations were acquired through coupling, stored in the synchronized manifold, and spent at the behavioral output. But the observer's entropy bookkeeping is incomplete because its measurement resolution is lower than the system's internal dimensionality ($D_{\mathrm{observer}} \ll \Deff$).
+
+The connectome is exactly such a low-dimensional observer. It captures the sparse, directed connections that electron microscopy can resolve. It does not capture the continuous, spatially graded, temporally structured field dynamics that the coupling physics produces. The ``mystery'' of how 302 neurons generate complex adaptive behavior dissolves when the measurement instrument is recognized as lossy: the system has far more coupling channels than the connectome records.
+
+
+%% ═══════════════════════════════════════════════════════════════════
+\section{Prediction Without Coding}
+\label{sec:predictive}
+
+The predictive processing framework---predictive coding \cite{rao1999}, the free-energy principle \cite{friston2010}, active inference \cite{friston2017}---treats prediction as computation over internal generative models. We argue that this framework mistakes the shadow for the thing.
+
+\subsection{The category error}
+
+\textit{Coding} is what happens when high-dimensional oscillatory dynamics collapse to a discrete output at the measurement boundary. It is the \textit{product} of dimensional reduction, not the process that generates prediction. Predictive coding observes the low-dimensional residuals of high-dimensional synchronization and attributes them to an inferential process. But the prediction was already present in the synchronized manifold before any coding occurred.
+
+Consider scope. Predictive coding requires a generative model, a hierarchical architecture, and an error-propagation mechanism. These exist in vertebrate cortex. They do not exist in bacteria, plants, cell collectives, or invertebrates with compact nervous systems---yet all exhibit anticipatory behavior. The synchronization framework provides a complete account at every scale: prediction arises from continuous coupling, not from inference.
+
+\subsection{What predictive coding actually describes}
+
+If prediction is synchronization, predictive coding describes the regime where synchronization \textit{fails} and biology falls back on computation. This regime is real but rare. Computation becomes necessary in three conditions: (i) \textit{adversarial environments}, where coupling channels carry systematically misleading structure; (ii) \textit{absent coupling}, where the organism must predict in dimensions to which it is not currently coupled (counterfactual reasoning, planning in novel environments); (iii) \textit{impoverished coupling}, where bandwidth is too narrow for relevant environmental structure. Most biological prediction---catching a ball, navigating a gradient, social synchrony in conversation---operates through continuous coupling where the synchronization framework provides a complete account without requiring generative models.
+
+The free-energy principle's central injunction---minimize surprise---can be restated as \textit{maintain synchronization}: keep $\tsync < \tenv$. The mathematics is the same; the interpretation differs. Under predictive coding, the organism \textit{infers} environmental state through a model. Under the synchronization framework, the organism \textit{is coupled to} the environment through continuous dynamics. The first requires generative models. The second requires only a coupling surface. The first is phylogenetically recent. The second is as old as chemistry.
+
+\subsection{Coding as dimensional collapse}
+
+The oscillator field simulation demonstrates the cost of coding directly (Figure~\ref{fig:code_collapse}). The full continuous internal state of a 625-oscillator network carries ${\sim}14$ nats of future MI with the environment. An explicit commit channel---projecting onto 5 dimensions, quantizing to 4 bits, updating at discrete intervals---retains only ${\sim}2$ nats. Coding destroys ${\sim}85\%$ of the predictive content. The lost information is precisely the distributed, high-dimensional correlation structure in phase relationships among coupled oscillators---the structure the synchronization framework identifies as the substrate of prediction.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{simulations/figures/fig3_code_collapse.pdf}
+\caption{Prediction lives upstream of code. \textbf{(a)} Future MI for the full continuous state (red) versus explicit commit channels with different bandwidths (dashed). \textbf{(b)} Information lost by coding at short prediction lag.}
+\label{fig:code_collapse}
+\end{figure}
+
+Two decades of searching for the neural code of prediction have produced elegant theory and limited empirical confirmation. The synchronization framework suggests why: the neural activity that predictive coding interprets as ``prediction signals'' and ``error signals'' may be the low-dimensional shadow of high-dimensional synchronization dynamics. Looking for the code is looking at commit events. The prediction lives in the oscillatory dynamics between commits.
+
+
+%% ═══════════════════════════════════════════════════════════════════
+\section{Discussion}
+\label{sec:discussion}
+
+\textit{Simulation model.} The \textit{C.~elegans} simulation uses 448 coupled phase oscillators on the real connectome from the OpenWorm project \cite{varshney2011}, with neuron positions from WormAtlas \cite{altun2024}. Coupling through chemical synapses and gap junctions follows normalized adjacency matrices; ephaptic coupling uses Gaussian distance-dependent weights ($\sigma = 0.15$ body units). The neuropeptide broadcast field has a 1-second time constant. Proprioceptive feedback couples mean motor output back to sensory neuron phases. All models use $dt = 0.001$\,s, $T = 50$\,s with 10\,s transient, and subsample every 10 steps. MI is estimated via Gaussian covariance with Ledoit-Wolf shrinkage. Five seeds per condition with the same initial phases, frequencies, and noise realizations across models for fair comparison. The oscillator field simulation (Figures~\ref{fig:alignment}, \ref{fig:gap}, \ref{fig:code_collapse}) uses a $25 \times 25$ lattice with nearest-neighbor coupling ($K_{\mathrm{nn}} = 2$) driven by a spatiotemporal OU environment ($\tenv = 4$\,s, spatial correlation $L = 4$). Code is available at \url{https://github.com/todd866/predictive-horizons}.
+
+\subsection{Connection to the BioSystems program}
+\label{sec:connection}
+
+This paper closes an arc across four prior contributions. The measurement floor ($\tmeas$) from thermodynamic analysis \cite{todd2025demon} meets the synchronization floor ($\tsync$) from oscillator dynamics \cite{todd2026coherence}. When the environment decorrelates slowly enough ($\tenv > \tsync$), the internal state carries predictive content \cite{todd2025intelligence}. The \textit{C.~elegans} result adds a new element: the distinction between \textit{carrying} information and \textit{using} it. The connectome carries environmental information adequately. It cannot translate that information into coordinated action without the field coupling that the low-dimensional projection discards. This distinction---between information content and coordination capacity---maps onto the broader program's theme: measurement \cite{todd2025falsifiability} systematically underestimates high-dimensional systems, and the underestimation has functional consequences.
+
+\subsection{Self-simulation and proprioception}
+\label{sec:self_sim}
+
+The full field model includes proprioceptive feedback: motor output feeds back to sensory neurons through the body. This closes the prediction-action cycle. The organism predicts the environment, acts, senses its own action, and updates. The prediction is not just about the world---it is about the world-plus-self system. When the sync manifold includes the organism's own state through proprioceptive, interoceptive, and reafferent coupling, the system predicts not only the environment but itself.
+
+This is why proprioception contributes to motor coordination in Model C: it provides the temporal information about the organism's current body configuration that the connectome's static wiring diagram cannot represent. The prediction-action loop is not a bonus feature---it is constitutive of coordinated behavior. An organism that cannot sense its own movement cannot coordinate its next movement, regardless of how much environmental information it carries.
+
+\subsection{Oscillatory substrates and aging}
+\label{sec:substrates}
+
+The framework implies that biological intelligence requires a fundamentally different kind of computation than discrete, clocked, symbol-manipulating architectures. If prediction arises from continuous high-dimensional coupling, then the computational substrate matters: oscillatory dynamics are not merely a carrier signal for spike-coded information---they are the predictive architecture itself. An oscillatory substrate re-entrains coupled elements every cycle, maintaining the synchronized manifold natively. A discrete substrate must \textit{simulate} this coupling through sequential updates, losing predictive content as continuous coupling is replaced by discrete sampling.
+
+This connects to the observation that aging is accompanied by progressive loss of physiological complexity \cite{cohen2022}: the degradation of high-dimensional oscillatory structure in cardiac, neural, and hormonal dynamics with age. If prediction requires high-dimensional synchronized dynamics, then complexity loss implies prediction loss---the aging organism's shrinking $\Deff$ reduces its capacity to maintain the distributed correlations on which anticipatory behavior depends.
 
 \subsection{Open questions}
 \label{sec:open}
 
-Several questions remain beyond the scope of the present framework.
+\textit{Coupling efficiency.} Different biological architectures achieve $\tsync < \tenv$ at vastly different metabolic costs. Whether there exists a thermodynamic bound on coupling efficiency---a minimum cost per unit of predictive content---is open. The framework of Still et al.\ \cite{still2012} provides tools for formalizing it.
 
-\textit{What sets coupling efficiency?} The framework establishes that $\tsync < \tenv$ is necessary for prediction, but different biological architectures achieve this inequality at vastly different metabolic costs. A bacterial receptor array achieves millisecond entrainment through direct ligand binding at negligible energetic cost per coupling event. A cortical attention network achieves selective synchronization through active gain modulation requiring substantial metabolic investment. Whether there exists a thermodynamic bound on coupling efficiency---a minimum energetic cost per unit of predictive content gained, analogous to the Landauer bound on the cost of measurement---is an open question. The thermodynamic prediction literature \cite{still2012} provides tools for formalizing it.
+\textit{Evolutionary tuning.} The framework predicts that selection on predictive capacity should drive expansion of the coupling interface. The transition from bacterial chemoreception through invertebrate multimodal sensing to vertebrate cortical integration can be read as an evolutionary trajectory toward richer synchronization interfaces.
 
-\textit{How does evolution tune the synchronization interface?} Natural selection shapes the coupling surface between organism and environment. The framework predicts that selection pressure on predictive capacity should drive expansion of the coupling interface---more receptor types, wider sensory bandwidth, richer cross-modal integration. This prediction is broadly consistent with the evolutionary expansion of sensory modalities across phyla: the transition from bacterial chemoreception (a handful of receptor types) through invertebrate multimodal sensing to vertebrate cortical integration can be read as an evolutionary trajectory toward richer synchronization interfaces. Whether this trajectory is driven specifically by selection on predictive capacity, rather than on other functions of sensory expansion, is an empirical question that the framework motivates but does not resolve.
-
-\textit{How broadly does the framework apply?} The biological examples in this paper focus on neural and sensory dynamics, but oscillatory coupling is ubiquitous in biology: gene regulatory networks exhibit ultradian oscillations (p53-Mdm2, NF-$\kappa$B), metabolic networks show glycolytic oscillations, immune signaling involves oscillatory cytokine dynamics, and circadian clocks coordinate organismal physiology through oscillatory entrainment. The sync-measurement framework should apply wherever continuous coupling through oscillatory dynamics creates correlations that are destroyed by discrete measurement. Whether the specific timescale ordering $\tsync < \tmeas < \tenv$ holds across these systems is an empirical question that the framework motivates.
-
-\textit{Oscillatory substrates as predictive architectures.} The framework implies that biological intelligence requires a fundamentally different kind of computation than the discrete, clocked, symbol-manipulating architectures that dominate both digital computing and computational neuroscience. If prediction arises from continuous high-dimensional coupling rather than from learned inference over stored representations, then the computational substrate matters: oscillatory dynamics are not merely a carrier signal for spike-coded information---they are the predictive architecture itself. An oscillatory substrate provides continuous high-bandwidth coupling natively, re-entraining coupled elements every cycle and maintaining the synchronized manifold that carries future-relevant information. A discrete substrate---whether silicon or a computational model---must \textit{simulate} this coupling through sequential updates, and the framework predicts that the simulation should lose predictive content as continuous coupling is replaced by discrete sampling. This is not a quantitative disadvantage that faster clocks can overcome; it is a structural limitation of discrete architectures when applied to systems whose computational power resides in continuous phase relationships across many coupled degrees of freedom. Understanding biological intelligence may therefore require not just better algorithms but different computational substrates---physical systems capable of maintaining high-dimensional continuous coupling, rather than digital systems that approximate coupling through discrete state transitions. A simulation using the complete \textit{C.~elegans} connectome (448 neurons, 4681 chemical synapses, 2698 gap junctions; data from the OpenWorm project) illustrates this directly (Figure~\ref{fig:celegans}). We compared a standard discrete model---leaky integrate-and-fire neurons with gap junctions implemented as ohmic conductances---against an oscillatory model using the same connectome but with neurons as coupled phase oscillators and gap junctions providing continuous bidirectional phase coupling. Intrinsic frequencies were assigned by neuron class: interneurons slow (0.3--0.7\,Hz, integrative), sensory neurons moderate (0.8--1.4\,Hz), motor neurons faster (1.5--2.5\,Hz). At the optimal coupling regime ($K_{\mathrm{gap}} = 0.3$), the oscillatory model carried 16$\times$ more future mutual information with the sensory environment than the discrete model (3.18 vs 0.20 nats). The oscillatory model achieved this with \textit{fewer} effective dimensions ($\Deff = 47$ vs 222)---it traded uninformative dimensions (uncorrelated noise in the discrete model) for environment-correlated modes. Each dimension in the oscillatory model carried more predictive content because it was synchronized with environmental structure through continuous coupling, not merely responding to instantaneous input currents.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{simulations/figures/fig_celegans_comparison.pdf}
-\caption{\textit{C.~elegans} connectome: oscillatory vs discrete coupling. Same 448-neuron connectome, two architectures. \textbf{(a)} The oscillatory model (red) carries 16$\times$ more future mutual information than the discrete LIF model (blue dashed) across all prediction lags. \textbf{(b)} Coupling sweep: predictive content (red) is highest at weak gap junction coupling, where the system maintains moderate dimensionality; stronger coupling collapses $\Deff$ (black). \textbf{(c)} At the optimal regime, the oscillatory model has fewer effective dimensions but far more predictive content---each dimension carries environment-relevant information. \textbf{(d,e)} Motor neuron output: the discrete model produces noisy, unstructured activation; the oscillatory model produces coordinated rhythmic patterns. \textbf{(f)} Eigenspectra: the oscillatory model distributes variance more broadly across principal components.}
-\label{fig:celegans}
-\end{figure}
-
-Maintaining such substrates is metabolically expensive: the coherent oscillatory dynamics that carry predictive content require continuous energy expenditure to sustain against thermal degradation. This connects the framework to the observation that aging is accompanied by progressive loss of physiological complexity \cite{cohen2022}---the degradation of high-dimensional oscillatory structure in cardiac, neural, and hormonal dynamics with age. If prediction requires high-dimensional synchronized dynamics, then complexity loss directly implies prediction loss: the aging organism's shrinking $\Deff$ reduces its capacity to maintain the distributed correlations on which anticipatory behavior depends.
-
-\subsection{Explicit scope boundaries}
-\label{sec:scope}
-
-Three questions are deliberately excluded from the present analysis.
-
-\textit{Free will and self-simulation.} The hierarchy from passive to selective synchronization raises questions about agency. When the sync manifold includes the organism's own state---through proprioceptive, interoceptive, and reafferent coupling---the system predicts not only the environment but itself. This self-referential loop, in which the organism's internal dynamics are synchronized with its own future trajectory alongside the environment's, constitutes a form of proto-agency: the organism acts on predictions about its own behavior. At the selective sync level, the organism can choose which aspects of itself to monitor and which to ignore---attending to heartbeat, breathing, postural state, or suppressing these channels in favor of environmental tracking. Whether this self-simulation constitutes genuine agency or sophisticated deterministic dynamics is a question the framework raises but does not resolve. We note only that the transition from passive environmental sync to selective self-simulation follows the same dimensional logic developed throughout this paper, and that the capacity for self-simulation scales with the organism's internal $\Deff$.
-
-\textit{Consciousness.} Whether synchronization-based prediction is, or requires, conscious experience is a separate question that the framework does not address. The sync-measurement asymmetry operates at scales (bacterial chemotaxis, nematode thermotaxis) where consciousness is not typically attributed. If consciousness is identified with a particular mode of synchronization---global workspace access, higher-order monitoring, integrated information---the framework may eventually connect to those accounts, but no such connection is claimed here.
-
-\textit{Quantum anticipation.} Igamberdiev's program on anticipatory dynamics \cite{igamberdiev2015,igamberdiev2004} provides a complementary account grounded in quantum measurement theory and non-demolition measurements. The present framework operates entirely at the classical and mesoscopic level: coupling, entrainment, and synchronization as described here involve no quantum coherence effects. Whether quantum anticipation provides an additional layer beneath the classical sync-measurement asymmetry is a question for Igamberdiev's program, not ours. The two accounts are complementary rather than competing: quantum measurement constraints may set ultimate floors on $\tmeas$ that are more restrictive than the classical Landauer bound, but the timescale ordering $\tsync < \tmeas < \tenv$ would still organize the resulting predictive dynamics.
+\textit{Quantum anticipation.} Igamberdiev's program \cite{igamberdiev2015,igamberdiev2004} provides a complementary account grounded in quantum measurement theory. The present framework operates at the classical and mesoscopic level. Whether quantum constraints set floors on $\tmeas$ more restrictive than the classical Landauer bound is a question for Igamberdiev's program; the timescale ordering $\tsync < \tmeas < \tenv$ would still organize the resulting dynamics.
 
 \subsection{Closing}
 \label{sec:closing}
 
-Prediction is the most useful thing biology does with high-dimensional dynamics. It is also the most parsimonious. A system that maintains continuous coupling with its environment and synchronizes faster than it measures will carry future-relevant information as a physical consequence of timescale ordering---no internal model required, no inference engine, no stored representation. The prediction horizon is set by the autocorrelation of the shared slow manifold: how long the coupled modes persist determines how far into the future the organism's internal state remains informative. From bacterial chemotaxis to cortical social cognition, the same structural asymmetry operates: continuous coupling is wide, measurement commitment is narrow, and the gap between them is where prediction lives.
+The connectome is a remarkable scientific achievement---a complete wiring diagram of a nervous system. But a wiring diagram is a measurement, not a system. The \textit{C.~elegans} result demonstrates this concretely: the connectome carries environmental information but cannot coordinate the body. The missing ingredient is not computational power but physical coupling---the continuous bioelectric field in which every neuron is embedded, the neuropeptide signals that modulate circuit behavior, the proprioceptive feedback that closes the prediction-action loop. These channels are measured, documented, and systematically excluded from connectome-based simulations.
 
-Intelligence lives upstream of code. The high-dimensional coherent dynamics that constitute biological intelligence \cite{todd2025intelligence} generate predictions through synchronization with environmental structure. Codes---discrete, low-dimensional, transmissible representations---emerge downstream, at the measurement boundary, when synchronized dynamics are collapsed to irreversible outputs. Predictive coding theory studies these downstream products and mistakes them for the generative process. The prediction was already there, in the oscillatory dynamics, before any code was formed.
+Prediction is the most useful thing biology does with high-dimensional dynamics. It arises not from computation over internal models but from continuous coupling with environmental structure. Intelligence lives upstream of code---in the oscillatory dynamics that generate predictions through synchronization, not in the coded outputs that emerge downstream when those dynamics are collapsed to irreversible commitments. The field is right there. Evolution uses it. Our simulations should too.
 
 \section*{Funding}
 
@@ -481,42 +436,55 @@ The author declares no competing interests.
 
 \section*{CRediT authorship contribution statement}
 
-\textbf{Ian Todd}: Conceptualization, Formal analysis, Investigation, Writing -- original draft, Writing -- review \& editing, Visualization.
+\textbf{Ian Todd}: Conceptualization, Formal analysis, Investigation, Writing -- original draft, Writing -- review \& editing, Visualization, Software.
 
 \section*{Acknowledgments}
 
-% To be updated after review
+Connectome data from the OpenWorm project. Neuron positions from WormAtlas.
 
 \begin{thebibliography}{99}
 
-% === Introduction references ===
+% === OpenWorm / connectome ===
 
-\bibitem{berg2004}
-Berg, H.C. (2004). \textit{E. coli in Motion}. Springer-Verlag.
+\bibitem{gleeson2018}
+Gleeson, P., Lung, D., Grosu, R., Hasani, R., Bhutan, S.D. (2018). c302: A multiscale framework for modelling the nervous system of \textit{Caenorhabditis elegans}. \textit{Philosophical Transactions of the Royal Society B}, 373(1758), 20170379.
 
-\bibitem{harmer2009}
-Harmer, S.L. (2009). The circadian system in higher plants. \textit{Annual Review of Plant Biology}, 60, 357--377.
+\bibitem{white1986}
+White, J.G., Southgate, E., Thomson, J.N., Brenner, S. (1986). The structure of the nervous system of the nematode \textit{Caenorhabditis elegans}. \textit{Philosophical Transactions of the Royal Society B}, 314(1165), 1--340.
 
-\bibitem{wolpert1998}
-Wolpert, D.M., Miall, R.C., Kawato, M. (1998). Internal models in the cerebellum. \textit{Trends in Cognitive Sciences}, 2(9), 338--347.
+\bibitem{cook2019}
+Cook, S.J., Jarrell, T.A., Brittin, C.A., Wang, Y., Bloniarz, A.E., Yakovlev, M.A., Nguyen, K.C.Q., Tang, L.T.-H., Bayer, E.A., Duerr, J.S., B\"ulow, H.E., Hobert, O., Hall, D.H., Bhatt, D.K. (2019). Whole-animal connectomes of both \textit{Caenorhabditis elegans} sexes. \textit{Nature}, 571(7763), 63--71.
 
-\bibitem{frith2007}
-Frith, C.D., Frith, U. (2007). Social cognition in humans. \textit{Current Biology}, 17(16), R724--R732.
+\bibitem{varshney2011}
+Varshney, L.R., Chen, B.L., Paniagua, E., Hall, D.H., Chklovskii, D.B. (2011). Structural properties of the \textit{Caenorhabditis elegans} neuronal network. \textit{PLoS Computational Biology}, 7(2), e1001066.
 
-\bibitem{rao1999}
-Rao, R.P.N., Ballard, D.H. (1999). Predictive coding in the visual cortex: A functional interpretation of some extra-classical receptive-field effects. \textit{Nature Neuroscience}, 2(1), 79--87.
+\bibitem{altun2024}
+Altun, Z.F., Herndon, L.A., Wolkow, C.A., Crocker, C., Lints, R., Hall, D.H. (2002--2024). WormAtlas. \url{http://www.wormatlas.org}
 
-\bibitem{clark2013}
-Clark, A. (2013). Whatever next? Predictive brains, situated agents, and the future of cognitive science. \textit{Behavioral and Brain Sciences}, 36(3), 181--204.
+\bibitem{izquierdo2018}
+Izquierdo, E.J., Beer, R.D. (2018). From head to tail: A neuromechanical model of forward locomotion in \textit{Caenorhabditis elegans}. \textit{Biological Cybernetics}, 112(1), 37--54.
 
-\bibitem{friston2010}
-Friston, K. (2010). The free-energy principle: A unified brain theory? \textit{Nature Reviews Neuroscience}, 11(2), 127--138.
+\bibitem{cohen2012}
+Cohen, N., Denham, J.E. (2012). Whole animal modeling: Piecing together nematode locomotion. \textit{Current Opinion in Neurobiology}, 22(4), 602--608.
 
-\bibitem{pecora1990}
-Pecora, L.M., Carroll, T.L. (1990). Synchronization in chaotic systems. \textit{Physical Review Letters}, 64(8), 821--824.
+% === Ephaptic / field coupling ===
 
-\bibitem{rulkov1995}
-Rulkov, N.F., Sushchik, M.M., Tsimring, L.S., Abarbanel, H.D.I. (1995). Generalized synchronization of chaos in directionally coupled chaotic systems. \textit{Physical Review E}, 51(2), 980--994.
+\bibitem{pinotsis2023}
+Pinotsis, D.A., Fridman, G., Miller, E.K. (2023). Cytoelectric coupling: Electric fields sculpt neural activity and ``tune'' the brain's infrastructure. \textit{Progress in Neurobiology}, 226, 102465.
+
+\bibitem{anastassiou2011}
+Anastassiou, C.A., Perin, R., Markram, H., Koch, C. (2011). Ephaptic coupling of cortical neurons. \textit{Nature Neuroscience}, 14(2), 217--223.
+
+\bibitem{bentley2016}
+Bentley, B., Branicky, R., Barnes, C.L., Chew, Y.L., Yemini, E., Bullmore, E.T., V\'ertes, P.E., Schafer, W.R. (2016). The multilayer connectome of \textit{Caenorhabditis elegans}. \textit{PLoS Computational Biology}, 12(12), e1005283.
+
+\bibitem{wen2012}
+Wen, Q., Po, M.D., Hulme, E., Chen, S., Liu, X., Kwok, S.W., Gerber, M., Rber, M., Samuel, A.D.T., Bhatt, D.K. (2012). Proprioceptive coupling within motor neurons drives \textit{C.~elegans} forward locomotion. \textit{Neuron}, 76(4), 750--761.
+
+% === BioSystems program ===
+
+\bibitem{todd2025falsifiability}
+Todd, I. (2025). The limits of falsifiability: Dimensionality, measurement thresholds, and the sub-Landauer domain in biological systems. \textit{BioSystems}, 258, 105608.
 
 \bibitem{todd2025demon}
 Todd, I. (2025). Timing inaccessibility in high-dimensional biological systems: A Maxwell's demon analysis. \textit{BioSystems}, 258, 105632.
@@ -527,8 +495,62 @@ Todd, I. (2026). Intelligence as high-dimensional coherence: The observable dime
 \bibitem{todd2026coherence}
 Todd, I. (2026). Coherence time in biological oscillator assemblies bounds the rate of state registration. \textit{BioSystems}, 105755.
 
-\bibitem{rosen1985}
-Rosen, R. (1985). \textit{Anticipatory Systems: Philosophical, Mathematical and Methodological Foundations}. Pergamon Press.
+% === Dynamical systems ===
+
+\bibitem{rulkov1995}
+Rulkov, N.F., Sushchik, M.M., Tsimring, L.S., Abarbanel, H.D.I. (1995). Generalized synchronization of chaos in directionally coupled chaotic systems. \textit{Physical Review E}, 51(2), 980--994.
+
+\bibitem{kocarev1996}
+Kocarev, L., Parlitz, U. (1996). Generalized synchronization, predictability, and equivalence of unidirectionally coupled dynamical systems. \textit{Physical Review Letters}, 76(11), 1816--1819.
+
+\bibitem{takens1981}
+Takens, F. (1981). Detecting strange attractors in turbulence. In \textit{Dynamical Systems and Turbulence} (Lecture Notes in Mathematics, Vol.\ 898), pp.\ 366--381. Springer.
+
+\bibitem{voss2000}
+Voss, H.U. (2000). Anticipating chaotic synchronization. \textit{Physical Review E}, 61(5), 5115--5119.
+
+\bibitem{still2012}
+Still, S., Sivak, D.A., Bell, A.J., Crooks, G.E. (2012). Thermodynamics of prediction. \textit{Physical Review Letters}, 109(12), 120604.
+
+% === Neuroscience / biology ===
+
+\bibitem{berg2004}
+Berg, H.C. (2004). \textit{E. coli in Motion}. Springer-Verlag.
+
+\bibitem{segall1986}
+Segall, J.E., Block, S.M., Berg, H.C. (1986). Temporal comparisons in bacterial chemotaxis. \textit{Proceedings of the National Academy of Sciences}, 83(23), 8987--8991.
+
+\bibitem{mori1995}
+Mori, I., Ohshima, Y. (1995). Neural regulation of thermotaxis in \textit{Caenorhabditis elegans}. \textit{Nature}, 376(6538), 344--348.
+
+\bibitem{clark2006}
+Clark, D.A., Biron, D., Sengupta, P., Samuel, A.D.T. (2006). The AFD sensory neurons encode multiple functions underlying thermotactic behavior in \textit{Caenorhabditis elegans}. \textit{Journal of Neuroscience}, 26(28), 7444--7451.
+
+\bibitem{kato2015}
+Kato, S., Kaplan, H.S., Schr\"{o}del, T., Skora, S., Lindsay, T.H., Yemini, E., Lockery, S., Zimmer, M. (2015). Global brain dynamics embed the motor command sequence of \textit{Caenorhabditis elegans}. \textit{Cell}, 163(3), 656--669.
+
+\bibitem{fries2005}
+Fries, P. (2005). A mechanism for cognitive dynamics: Neuronal communication through neuronal coherence. \textit{Trends in Cognitive Sciences}, 9(10), 474--480.
+
+\bibitem{miller2018}
+Miller, E.K., Lundqvist, M., Bastos, A.M. (2018). Working memory 2.0. \textit{Neuron}, 100(2), 463--475.
+
+\bibitem{lundqvist2016}
+Lundqvist, M., Rose, J., Herman, P., Brincat, S.L., Buschman, T.J., Miller, E.K. (2016). Gamma and beta bursts underlie working memory. \textit{Neuron}, 90(1), 152--164.
+
+\bibitem{kelso1995}
+Kelso, J.A.S. (1995). \textit{Dynamic Patterns: The Self-Organization of Brain and Behavior}. MIT Press.
+
+\bibitem{rabinovich2008}
+Rabinovich, M.I., Huerta, R., Varona, P., Afraimovich, V.S. (2008). Transient cognitive dynamics, metastability, and decision making. \textit{PLoS Computational Biology}, 4(5), e1000072.
+
+\bibitem{levin2021}
+Levin, M. (2021). Bioelectric signaling: Reprogrammable circuits underlying embryogenesis, regeneration, and cancer. \textit{Cell}, 184(8), 1971--1989.
+
+\bibitem{levin2019}
+Levin, M. (2019). The computational boundary of a ``self'': Developmental bioelectricity drives multicellularity and scale-free cognition. \textit{Frontiers in Psychology}, 10, 2688.
+
+% === Igamberdiev / Rosen ===
 
 \bibitem{igamberdiev2004}
 Igamberdiev, A.U. (2004). Quantum computation, non-demolition measurements, and reflective control in living systems. \textit{BioSystems}, 77(1--3), 47--56.
@@ -539,91 +561,21 @@ Igamberdiev, A.U. (2015). Anticipatory dynamics of biological systems: from mole
 \bibitem{igamberdiev2017}
 Igamberdiev, A.U. (2017). Evolutionary transition from biological to social systems via generation of reflexive models of externality. \textit{Progress in Biophysics and Molecular Biology}, 131, 336--346.
 
-% === Section 2 references ===
+\bibitem{rosen1985}
+Rosen, R. (1985). \textit{Anticipatory Systems: Philosophical, Mathematical and Methodological Foundations}. Pergamon Press.
 
-\bibitem{voss2000}
-Voss, H.U. (2000). Anticipating chaotic synchronization. \textit{Physical Review E}, 61(5), 5115--5119.
+% === Predictive coding ===
 
-\bibitem{takens1981}
-Takens, F. (1981). Detecting strange attractors in turbulence. In \textit{Dynamical Systems and Turbulence} (Lecture Notes in Mathematics, Vol.\ 898), pp.\ 366--381. Springer.
+\bibitem{rao1999}
+Rao, R.P.N., Ballard, D.H. (1999). Predictive coding in the visual cortex: A functional interpretation of some extra-classical receptive-field effects. \textit{Nature Neuroscience}, 2(1), 79--87.
 
-\bibitem{kocarev1996}
-Kocarev, L., Parlitz, U. (1996). Generalized synchronization, predictability, and equivalence of unidirectionally coupled dynamical systems. \textit{Physical Review Letters}, 76(11), 1816--1819.
-
-\bibitem{still2012}
-Still, S., Sivak, D.A., Bell, A.J., Crooks, G.E. (2012). Thermodynamics of prediction. \textit{Physical Review Letters}, 109(12), 120604.
-
-% === Section 3 references ===
-
-\bibitem{mori1995}
-Mori, I., Ohshima, Y. (1995). Neural regulation of thermotaxis in \textit{Caenorhabditis elegans}. \textit{Nature}, 376(6538), 344--348.
-
-\bibitem{fries2005}
-Fries, P. (2005). A mechanism for cognitive dynamics: Neuronal communication through neuronal coherence. \textit{Trends in Cognitive Sciences}, 9(10), 474--480.
-
-\bibitem{kelso1995}
-Kelso, J.A.S. (1995). \textit{Dynamic Patterns: The Self-Organization of Brain and Behavior}. MIT Press.
-
-\bibitem{rabinovich2008}
-Rabinovich, M.I., Huerta, R., Varona, P., Afraimovich, V.S. (2008). Transient cognitive dynamics, metastability, and decision making. \textit{PLoS Computational Biology}, 4(5), e1000072.
-
-% === Section 4 references ===
-
-\bibitem{segall1986}
-Segall, J.E., Block, S.M., Berg, H.C. (1986). Temporal comparisons in bacterial chemotaxis. \textit{Proceedings of the National Academy of Sciences}, 83(23), 8987--8991.
-
-\bibitem{sourjik2012}
-Sourjik, V., Wingreen, N.S. (2012). Responding to chemical gradients: Bacterial chemotaxis. \textit{Current Opinion in Cell Biology}, 24(2), 262--268.
-
-\bibitem{shimizu2010}
-Shimizu, T.S., Tu, Y., Berg, H.C. (2010). A modular gradient-sensing network for chemotaxis in \textit{Escherichia coli} revealed by responses to time-varying stimuli. \textit{Molecular Systems Biology}, 6, 382.
-
-\bibitem{kato2015}
-Kato, S., Kaplan, H.S., Schr\"{o}del, T., Skora, S., Lindsay, T.H., Yemini, E., Lockery, S., Zimmer, M. (2015). Global brain dynamics embed the motor command sequence of \textit{Caenorhabditis elegans}. \textit{Cell}, 163(3), 656--669.
-
-\bibitem{clark2006}
-Clark, D.A., Biron, D., Sengupta, P., Samuel, A.D.T. (2006). The AFD sensory neurons encode multiple functions underlying thermotactic behavior in \textit{Caenorhabditis elegans}. \textit{Journal of Neuroscience}, 26(28), 7444--7451.
-
-\bibitem{wilson1993}
-Wilson, M.A., McNaughton, B.L. (1993). Dynamics of the hippocampal ensemble code for space. \textit{Science}, 261(5124), 1055--1058.
-
-\bibitem{dragoi2011}
-Dragoi, G., Tonegawa, S. (2011). Preplay of future place cell sequences by hippocampal cellular assemblies. \textit{Nature}, 469(7330), 397--401.
-
-\bibitem{dragoi2013}
-Dragoi, G., Tonegawa, S. (2013). Distinct preplay of multiple novel spatial experiences in the rat. \textit{Proceedings of the National Academy of Sciences}, 110(22), 9100--9105.
-
-\bibitem{foster2006}
-Foster, D.J., Wilson, M.A. (2006). Reverse replay of behavioural sequences in hippocampal place cells during the awake state. \textit{Nature}, 440(7084), 680--683.
-
-% === Section 5 references ===
+\bibitem{friston2010}
+Friston, K. (2010). The free-energy principle: A unified brain theory? \textit{Nature Reviews Neuroscience}, 11(2), 127--138.
 
 \bibitem{friston2017}
 Friston, K.J., FitzGerald, T., Rigoli, F., Schwartenbeck, P., Pezzulo, G. (2017). Active inference: A process theory. \textit{Neural Computation}, 29(1), 1--49.
 
-% === Miller lab references ===
-
-\bibitem{miller2018}
-Miller, E.K., Lundqvist, M., Bastos, A.M. (2018). Working memory 2.0. \textit{Neuron}, 100(2), 463--475.
-
-\bibitem{lundqvist2016}
-Lundqvist, M., Rose, J., Herman, P., Brincat, S.L., Buschman, T.J., Miller, E.K. (2016). Gamma and beta bursts underlie working memory. \textit{Neuron}, 90(1), 152--164.
-
-\bibitem{pinotsis2023}
-Pinotsis, D.A., Fridman, G., Miller, E.K. (2023). Cytoelectric coupling: Electric fields sculpt neural activity and ``tune'' the brain's infrastructure. \textit{Progress in Neurobiology}, 226, 102465.
-
-% === Levin references ===
-
-\bibitem{levin2021}
-Levin, M. (2021). Bioelectric signaling: Reprogrammable circuits underlying embryogenesis, regeneration, and cancer. \textit{Cell}, 184(8), 1971--1989.
-
-\bibitem{levin2019}
-Levin, M. (2019). The computational boundary of a ``self'': Developmental bioelectricity drives multicellularity and scale-free cognition. \textit{Frontiers in Psychology}, 10, 2688.
-
-% === Section 6 references ===
-
-\bibitem{todd2025falsifiability}
-Todd, I. (2025). The limits of falsifiability: Dimensionality, measurement thresholds, and the sub-Landauer domain in biological systems. \textit{BioSystems}, 258, 105608.
+% === Aging ===
 
 \bibitem{cohen2022}
 Cohen, A.A., Ferrucci, L., F\"ul\"op, T., Gravel, D., Hao, N., Kriete, A., Levine, M.E., Lipsitz, L.A., Olde Rikkert, M.G.M., Rutenberg, A., Stroustrup, N., Varadhan, R. (2022). A complex systems approach to aging biology. \textit{Nature Aging}, 2, 580--591.

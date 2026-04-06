@@ -1,84 +1,76 @@
 # Predictive Horizons of High-Dimensional Biological Systems
 
+**The connectome is the measurement, not the system.**
+
 **Repository:** [todd866/predictive-horizons](https://github.com/todd866/predictive-horizons)
 **Paper status:** In preparation for *BioSystems*
 
 ## Companion Papers
 
-This is paper 5 in the BioSystems series on high-dimensional biological dynamics:
+Paper 5 in the BioSystems series on high-dimensional biological dynamics:
 
 1. **Limits of Falsifiability** — [DOI: 10.1016/j.biosystems.2025.105608](https://doi.org/10.1016/j.biosystems.2025.105608)
 2. **Timing Inaccessibility** — [DOI: 10.1016/j.biosystems.2025.105632](https://doi.org/10.1016/j.biosystems.2025.105632)
-3. **Intelligence as High-Dimensional Coherence** — [DOI: 10.1016/j.biosystems.2026.105704](https://doi.org/10.1016/j.biosystems.2026.105704) | [repo](https://github.com/todd866/intelligence-biosystems)
+3. **Intelligence as High-Dimensional Coherence** — [DOI: 10.1016/j.biosystems.2026.105704](https://doi.org/10.1016/j.biosystems.2026.105704)
 4. **Coherence Time** — [DOI: 10.1016/j.biosystems.2026.105755](https://doi.org/10.1016/j.biosystems.2026.105755)
 5. **Predictive Horizons** — this paper
 
-## One-line thesis
+## Overview
 
-Intelligence and prediction live upstream of code: biological prediction arises from continuous oscillatory synchronization with environmental structure, not from computation over internal models, and coding destroys most of the predictive content.
+Connectome-only simulations of *C. elegans* carry environmental information but cannot coordinate motor output. We show that field-level coupling — ephaptic, neuropeptide broadcast, proprioceptive feedback — rescues motor coordination on the real 448-neuron connectome, and that this rescue requires criticality.
 
-## Core results
+**Key equation:** The predictive regime is τ\_sync < τ\_env (synchronization outruns environmental change), with anticipatory appearance when τ\_sync < τ\_meas (sync outruns measurement commitment).
 
-### 1. Sync-Measurement Asymmetry
+## Key Results
 
-Three timescales define the predictive regime:
+- **Motor coordination requires field coupling.** VA-VB correlation: ~0.05 (connectome only) → ~0.6 (full field model). MI is similar across models (~0.5 nats). The connectome carries information; the field coordinates the body.
+- **Criticality is required.** The coordination advantage appears only near the synchronization phase transition.
+- **The observational gap.** A 625-oscillator network carries ~14 nats of predictive content; a 5-dimensional observer measures ~5 nats. 64% is hidden correlation structure.
+- **Coding destroys prediction.** Discrete coding retains only ~15% of the predictive content in continuous oscillatory dynamics.
 
-- **τ_sync** — entrainment time (how quickly internal dynamics align with environment through coupling)
-- **τ_env** — environmental autocorrelation (how long structure persists)
-- **τ_meas** — measurement commitment time (how long to collapse to discrete output)
+## Running Simulations
 
-**Predictive regime:** τ_sync < τ_env (organism keeps up with environment)
-**Anticipatory appearance:** τ_sync < τ_meas (organism has incorporated structure before it can be "measured")
+```bash
+# Theory figures (alignment, observational gap, code collapse)
+cd simulations
+python3 generate_figures.py
 
-### 2. The Observational Gap
+# C. elegans coordination result (headline figure)
+cd simulations/openworm
+python3 celegans_coordination.py
+```
 
-A 625-oscillator network coupled to a spatiotemporal environment carries ~14.4 nats of future mutual information in its full internal state. A 5-dimensional observer can verify only ~5.2 nats — 64% is hidden correlation structure invisible to low-dimensional measurement.
-
-### 3. Coding Destroys Prediction
-
-An explicit commit channel (5 dimensions, 4 bits, discrete updates) retains only ~2.5 nats of the 14.4 available — coding destroys ~85% of predictive content. The prediction was in the oscillatory dynamics; the code is its impoverished shadow.
-
-### 4. Prediction Without Coding
-
-Predictive coding mistakes the low-dimensional products of dimensional collapse for the generative mechanism. Synchronization provides a complete account of prediction for organisms without the architecture to implement hierarchical Bayesian inference.
+**Requirements:** numpy, scipy, matplotlib
 
 ## Repository structure
 
 ```
 predictive-horizons/
-├── predictive_horizons.tex       # Manuscript
-├── predictive_horizons.pdf       # Compiled output
-├── highlights.txt                # BioSystems highlights
+├── predictive_horizons.tex          # Manuscript
+├── predictive_horizons.pdf          # Compiled output
+├── highlights.txt                   # BioSystems highlights
 ├── simulations/
-│   ├── generate_figures.py       # All simulation code
+│   ├── generate_figures.py          # Theory simulations (625-oscillator field)
+│   ├── openworm/
+│   │   ├── celegans_coordination.py # Headline result: 3 models × 3 regimes × 5 seeds
+│   │   ├── herm_full_edgelist.csv   # OpenWorm connectome data
+│   │   └── neuron_positions.csv     # Neuron positions along body axis
 │   └── figures/
-│       ├── fig1_alignment.pdf    # Sync manifold formation
-│       ├── fig2_observational_gap.pdf  # Hidden correlations
-│       └── fig3_code_collapse.pdf      # Coding destroys prediction
+│       ├── fig1_alignment.pdf       # Sync manifold formation
+│       ├── fig2_observational_gap.pdf
+│       ├── fig3_code_collapse.pdf
+│       └── fig_coordination.pdf     # C. elegans motor coordination
 ├── README.md
 ├── CITATION.cff
-└── LICENSE                       # MIT
+└── LICENSE                          # MIT
 ```
-
-## Running simulations
-
-```bash
-cd simulations
-python3 generate_figures.py
-```
-
-**Requirements:** numpy, scipy, matplotlib
-
-The script generates three evidentiary figures:
-- **Figure 1:** Alignment field snapshots showing sync manifold formation
-- **Figure 4:** The observational gap — system MI vs observer MI at different resolutions
-- **Figure 5:** Code collapse — continuous state vs explicit commit channel
 
 ## Citation
 
 ```bibtex
 @article{todd2026predictive,
-  title={Predictive Horizons of High-Dimensional Biological Systems},
+  title={Predictive Horizons of High-Dimensional Biological Systems:
+         The Connectome Is the Measurement, Not the System},
   author={Todd, Ian},
   journal={BioSystems},
   year={2026},
