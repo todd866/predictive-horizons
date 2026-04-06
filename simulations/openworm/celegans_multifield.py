@@ -177,12 +177,12 @@ kappa = 0.015     # diffusion / surface tension
 sigma_phi = 0.35  # noise on φ
 
 # Competition between modes (winnerless)
-alpha_compete = 0.8  # cross-inhibition strength
+alpha_compete = 1.2  # stronger cross-inhibition → clearer mode switching
 
 # Metabolic field
 m_0 = 1.0        # resting metabolic level
-tau_m = 5.0       # metabolic recovery timescale (slow — seconds)
-c_depletion = 0.3 # coherence depletes metabolism
+tau_m = 3.0       # metabolic recovery (faster → sustainable coherence)
+c_depletion = 0.15 # gentler depletion (was 0.3 → m collapsed to 0.21)
 sigma_m = 0.05    # metabolic noise (small)
 
 # Neural coupling
@@ -211,9 +211,9 @@ for i in head_inter:
     pump_strength[2, i] = gamma_base
 
 # Proprioceptive wave parameters
-K_proprio_wave = 0.3  # motor output → mechanical wave → coherence feedback
-tau_wave = 0.2         # wave propagation timescale
-v_wave = 2.0           # wave speed along body (body lengths / second)
+K_proprio_wave = 0.5  # stronger motor→wave→coherence feedback
+tau_wave = 0.3         # wave propagation timescale
+v_wave = 1.5           # wave speed along body (body lengths / second, ~realistic for C. elegans)
 
 # Environment
 n_sensors = min(len(sensory), 50)
