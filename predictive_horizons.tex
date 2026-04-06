@@ -277,7 +277,7 @@ The three-level hierarchy is not a taxonomy of organisms but of mechanisms. A si
 \section{Biological Case Studies}
 \label{sec:cases}
 
-The framework developed in Sections~\ref{sec:asymmetry}--\ref{sec:hierarchy} makes qualitative predictions about four quantities---$\tsync$, $\tenv$, $\tmeas$, and the resulting prediction horizon $\tpred$---that should be estimable from published experimental literature. This section examines four biological systems spanning molecular to cortical scales: bacterial chemotaxis, nematode thermotaxis, mammalian hippocampal navigation, and human cortical prediction (summarized in Figure~\ref{fig:synthesis}). For each system, we identify the relevant timescales from published measurements and assess whether the ordering $\tsync < \tmeas < \tenv$ holds. These are order-of-magnitude estimates illustrating the plausibility of the timescale inequality, not precision tests of a fitted scaling law. The claim is structural---that the sync-measurement asymmetry organizes anticipatory behavior across scales---not that a universal quantitative relationship links $\tsync$ to $\tpred$ with fixed coefficients.
+The framework developed in Sections~\ref{sec:asymmetry}--\ref{sec:hierarchy} makes qualitative predictions about four quantities---$\tsync$, $\tenv$, $\tmeas$, and the resulting prediction horizon $\tpred$---that should be estimable from published experimental literature. This section examines four biological systems spanning molecular to cortical scales: bacterial chemotaxis, nematode thermotaxis, mammalian hippocampal navigation, and human cortical prediction (summarized in Table~\ref{tab:synthesis}). For each system, we identify the relevant timescales from published measurements and assess whether the ordering $\tsync < \tmeas < \tenv$ holds. These are order-of-magnitude estimates illustrating the plausibility of the timescale inequality, not precision tests of a fitted scaling law. The claim is structural---that the sync-measurement asymmetry organizes anticipatory behavior across scales---not that a universal quantitative relationship links $\tsync$ to $\tpred$ with fixed coefficients.
 
 \subsection{\textit{E.\ coli} chemotaxis}
 \label{sec:ecoli}
@@ -331,8 +331,10 @@ Human cortical dynamics involve cross-regional synchronization across networks s
 
 \paragraph{Selective sync and social prediction.} Human social cognition exemplifies selective synchronization at its most extreme: predicting the behavior of another agent requires synchronizing with the slow dynamics of that agent's goals, intentions, and emotional states, all of which evolve on timescales of minutes to hours and are accessible only through noisy, low-bandwidth coupling channels (facial expression, prosody, gaze direction). The framework predicts that social prediction should be most accurate when coupling channels are rich and sustained (face-to-face interaction) and should degrade when coupling is impoverished (text-only communication) or intermittent (infrequent contact). These qualitative predictions are consistent with the social cognition literature but do not, at present, constitute a quantitative test of the synchronization framework.
 
-\begin{figure}[H]
+\begin{table}[H]
 \centering
+\caption{Timescale estimates across four biological systems. The ordering $\tsync < \tmeas < \tenv$ defines the predictive regime: the organism's internal state carries information about future environmental states that has not yet been registered through any discrete output channel. $^*$Hippocampal $\tsync$ is the operative (ongoing tracking) timescale; initial place field formation takes seconds to minutes (see text).}
+\label{tab:synthesis}
 \begin{tabular}{l c c c c}
 \toprule
 \textbf{System} & $\boldsymbol{\tsync}$ & $\boldsymbol{\tenv}$ & $\boldsymbol{\tmeas}$ & $\boldsymbol{\tpred}$ \\
@@ -343,26 +345,7 @@ Hippocampus & $\sim$100\,ms$^*$ & $\sim$min--hr & $\sim$s & $\sim$s--min \\
 Cortex & variable & $\sim$hr--yr & $\sim$s & variable \\
 \bottomrule
 \end{tabular}
-
-\vspace{0.6em}
-
-\vspace{0.3em}
-\begin{tikzpicture}[>=Stealth]
-% Clean timeline with proper spacing
-\node[font=\small, anchor=east] at (0,0) {Across all systems:};
-\node[font=\small] at (1.5,0) {$\tsync$};
-\draw[->, thick] (2.2,0) -- (3.8,0);
-\node[font=\small] at (4.5,0) {$\tmeas$};
-\draw[->, thick] (5.2,0) -- (6.8,0);
-\node[font=\small] at (7.5,0) {$\tenv$};
-
-\draw[decorate, decoration={brace, amplitude=5pt, mirror}, thick]
-    (1.0,-0.5) -- (8.0,-0.5)
-    node[midway, below=7pt, font=\footnotesize\itshape] {predictive regime};
-\end{tikzpicture}
-\caption{Timescale estimates across four biological systems spanning six orders of magnitude. In every case, the synchronization timescale $\tsync$ is shorter than the measurement commitment time $\tmeas$, which is shorter than the environmental autocorrelation time $\tenv$. The ordering $\tsync < \tmeas < \tenv$ defines the predictive regime: the organism's internal state carries information about future environmental states that has not yet been registered through any discrete output channel. The prediction horizon $\tpred$ scales with the persistence of the shared slow manifold. $^*$Hippocampal $\tsync$ is the operative (ongoing tracking) timescale; initial place field formation takes seconds to minutes (see text).}
-\label{fig:synthesis}
-\end{figure}
+\end{table}
 
 \bigskip
 
