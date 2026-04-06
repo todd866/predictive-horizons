@@ -1,5 +1,5 @@
-Connectome-only simulations carry environmental information but cannot coordinate motor output
-Field coupling (ephaptic, neuropeptide, proprioceptive) rescues motor coordination on the real C. elegans connectome
-The coordination advantage appears only at criticality — the synchronization phase transition
-Low-dimensional observers systematically underestimate information in high-dimensional synchronized systems
-Coding destroys ~85% of predictive content: intelligence lives upstream of code, in the coupling dynamics
+The connectome is a low-dimensional measurement of a high-dimensional biological system, not the system itself
+Field coupling doubles the order parameter and produces reliable motor coordination on the real C. elegans connectome
+A Landau-Ginzburg coherence field φ(x,t) produces emergent anterior-posterior gradients and spatially varying dimensionality
+Coherence bubbles are low-dimensional at macroscale, high-dimensional at microscale — defended by double-well potentials
+Intelligence is the thermodynamic maintenance of coherence against noise, not computation over internal models
