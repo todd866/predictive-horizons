@@ -284,6 +284,7 @@ order_r_hist = np.zeros(n_stored)
 si = 0
 
 report_interval = max(1, n_steps // 40)
+mask_upper = np.triu_indices(N, k=1)  # precompute for progress reports
 print(f"\n  Will store {n_stored:,} timepoints")
 print(f"  Expected runtime: 1-3 hours\n")
 
