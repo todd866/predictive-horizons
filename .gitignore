@@ -5,3 +5,5 @@ reference_pdfs/
 *.log
 *.out
 *.synctex.gz
+*.pyc
+__pycache__/
