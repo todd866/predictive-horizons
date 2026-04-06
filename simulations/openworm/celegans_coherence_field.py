@@ -66,7 +66,7 @@ FINE = '--fine' in sys.argv
 # ════════════════════════════════════════════════════════════════════
 if FINE:
     Nx_grid = 200       # spatial grid points on body axis
-    dt = 0.0005          # timestep
+    dt = 0.0002          # timestep (must satisfy CFL: dt < dx²/(2κ))
     T_total = 200.0      # total simulation time
     T_transient = 30.0   # transient to discard
     print("=== FINE resolution (publication quality) ===")
@@ -352,10 +352,10 @@ for t in range(1, n_steps):
     for gi in range(Nx_grid):
         source[gi] = gamma_pump * local_order_parameter(theta, gi)
 
-    # Coherence dynamics
-    dphi = (-dVdphi + kappa * lap_phi + source) / tau_phi
-    dphi += sigma_phi * rng_phi_noise.randn(Nx_grid) * np.sqrt(dt / tau_phi)
-    phi += dphi * dt
+    # Coherence dynamics (Euler-Maruyama)
+    dphi_det = (-dVdphi + kappa * lap_phi + source) / tau_phi
+    dphi_stoch = (sigma_phi / np.sqrt(tau_phi)) * rng_phi_noise.randn(Nx_grid)
+    phi += dphi_det * dt + dphi_stoch * np.sqrt(dt)
 
     # Clamp φ to [0, ~2] (can't go negative, soft upper bound from the potential)
     phi = np.clip(phi, 0, 3.0)
