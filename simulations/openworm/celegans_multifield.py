@@ -364,8 +364,10 @@ for t in range(1, n_steps):
         pump = m_field * source[k, :]
 
         dphi_det = (-dVdphi + kappa * lap - competition + pump)
+        # Clamp deterministic update to prevent blowup
+        dphi_det = np.clip(dphi_det, -10, 10)
         phi[k] += dphi_det * dt + sigma_phi * rng_phi.randn(Nx) * np.sqrt(dt)
-        phi[k] = np.clip(phi[k], 0, 2.0)
+        phi[k] = np.clip(phi[k], 0, 1.5)
 
     # ── Metabolic field update ──────────────────────────────────
     total_coherence = np.sum(phi**2, axis=0)  # sum of |φ_k|² across modes
@@ -384,7 +386,9 @@ for t in range(1, n_steps):
     wave_grad = np.zeros(Nx)
     wave_grad[1:] = (mech_wave[1:] - mech_wave[:-1]) / dx  # upwind
     dmw = -v_wave * wave_grad + 0.5 * wave_lap + motor_activity / tau_wave - mech_wave / tau_wave
+    dmw = np.clip(dmw, -50, 50)
     mech_wave += dmw * dt
+    mech_wave = np.clip(mech_wave, -5, 5)
 
     # ── Store ───────────────────────────────────────────────────
     if t >= n_trans and (t - n_trans) % subsample == 0 and si < n_stored:
@@ -455,7 +459,7 @@ for k in range(K_modes):
     mp = phi_hist[:, k, :].mean()
     print(f"  {mode_names[k]}: <φ_{k}> = {mp:.3f}, F = {fe_hist[:, k].mean():.3f}")
 print(f"  Metabolism: <m> = {mean_m.mean():.3f} ± {mean_m.std():.3f}")
-print(f"  Global r: {np.abs(np.mean(np.exp(1j * theta_hist[-1])))::.3f}")
+print(f"  Global r: {np.abs(np.mean(np.exp(1j * theta_hist[-1]))):.3f}")
 print(f"  Fisher info (mean): {fisher_hist.mean():.3f}")
 print(f"  Motor: VA-VB={va_vb:.3f}, VA-DA={va_da:.3f}")
 
