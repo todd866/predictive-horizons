@@ -1,0 +1,5 @@
+Biological prediction arises from organism-environment synchronization outpacing explicit measurement
+Three timescales define the predictive regime: sync time, environmental autocorrelation, and measurement commitment time
+Coding destroys most predictive content: simulation shows ~85% of future mutual information is lost at the commit boundary
+Low-dimensional observers systematically underestimate the information in high-dimensional synchronized systems
+Intelligence and prediction live upstream of code, in the oscillatory dynamics, not in the coded outputs

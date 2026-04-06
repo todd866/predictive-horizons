@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+authors:
+  - family-names: "Todd"
+    given-names: "Ian"
+title: "Predictive Horizons of High-Dimensional Biological Systems"
+version: 1.0.0
+url: "https://github.com/todd866/predictive-horizons"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Todd"
+      given-names: "Ian"
+  title: "Predictive Horizons of High-Dimensional Biological Systems"
+  journal: "BioSystems"
+  year: 2026
+  status: "in preparation"
