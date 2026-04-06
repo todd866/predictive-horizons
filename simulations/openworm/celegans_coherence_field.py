@@ -181,16 +181,24 @@ print(f"  Sensory: {len(sensory)}, Inter: {len(inter)}, Motor: {len(motor)}")
 # COHERENCE FIELD PARAMETERS
 # ════════════════════════════════════════════════════════════════════
 
-# Landau-Ginzburg potential: V(φ) = -(a/2)φ² + (b/4)φ⁴
-# Minima at φ=0 (decoherent) and φ=√(a/b) (coherent)
-# Key: the coherent well must be SHALLOW — coherence is marginal,
-# must be actively maintained by neural synchrony, and can fail locally.
-a_LG = 0.5       # shallow coherent well → φ* = √(a/b) = 0.5
+# Landau-Ginzburg potential: V(φ) = A·φ²·(1-φ)²
+# Genuinely bistable: stable minima at φ=0 (decoherent) AND φ=1 (coherent)
+# Barrier at φ=0.5, height A/16.
+# Neural sync TILTS the landscape toward coherent well via source term S(x,t).
+# Without pump: both wells equally stable. With pump: coherent well deeper.
+# Coherence potential: V(φ) = -(a/2)φ² + (b/4)φ⁴
+# Graded coherence model. The potential has a single minimum at
+# φ* = √(a/b) and an unstable fixed point at φ=0. Decoherence
+# (φ ≈ 0) is maintained by noise competing with the neural pump;
+# coherence (φ ≈ φ*) is maintained by the pump overcoming noise.
+# The transition between these regimes is graded, not a sharp
+# phase boundary — see the paper for discussion of this choice.
+a_LG = 0.5       # determines coherent equilibrium φ* = √(a/b) = 0.5
 b_LG = 2.0       # quartic stabilization
-kappa = 0.02     # diffusion / surface tension (modest — allows sharp boundaries)
-sigma_phi = 0.4  # strong noise (coherence field is actively contested)
-gamma_pump = 0.8 # neural sync → coherence pump (must work hard to maintain φ)
-tau_phi = 0.5    # coherence field timescale (responds on ~0.5s)
+kappa = 0.02     # diffusion / surface tension of coherence gradients
+sigma_phi = 0.4  # noise (competes with pump to keep φ low)
+gamma_pump = 0.8 # neural sync → coherence pump
+tau_phi = 0.5    # coherence timescale
 
 # Neural coupling
 K_chem = 0.3     # connectome chemical (always on)
@@ -285,7 +293,7 @@ print("\nRunning simulation...")
 
 # Initial conditions
 theta = 2 * np.pi * np.random.RandomState(77).rand(N)
-phi = np.ones(Nx_grid) * 0.1  # start mostly decoherent, small seed
+phi = np.ones(Nx_grid) * 0.1  # start mostly decoherent
 
 rng_noise = np.random.RandomState(123)
 rng_phi_noise = np.random.RandomState(456)
@@ -308,7 +316,7 @@ def laplacian_1d(f, dx):
     return lap
 
 def free_energy(phi, dx, kappa, a, b):
-    """Landau-Ginzburg free energy."""
+    """Landau-Ginzburg free energy: V(φ) = -(a/2)φ² + (b/4)φ⁴."""
     V = -a/2 * phi**2 + b/4 * phi**4
     grad_phi = np.gradient(phi, dx)
     F = np.sum(V + 0.5 * kappa * grad_phi**2) * dx
@@ -344,10 +352,12 @@ for t in range(1, n_steps):
 
     # ── Coherence field update (Landau-Ginzburg + neural pump) ──
     # dV/dφ = -aφ + bφ³
+    # dV/dφ for V(φ) = A·φ²·(1-φ)² → -dV/dφ = -2A·φ(1-φ)(1-2φ)
+    # dV/dφ for V(φ) = -(a/2)φ² + (b/4)φ⁴
     dVdphi = -a_LG * phi + b_LG * phi**3
     lap_phi = laplacian_1d(phi, dx)
 
-    # Neural synchrony source: local order parameter at each grid point
+    # Neural synchrony source: local order parameter
     source = np.zeros(Nx_grid)
     for gi in range(Nx_grid):
         source[gi] = gamma_pump * local_order_parameter(theta, gi)
@@ -357,7 +367,7 @@ for t in range(1, n_steps):
     dphi_stoch = (sigma_phi / np.sqrt(tau_phi)) * rng_phi_noise.randn(Nx_grid)
     phi += dphi_det * dt + dphi_stoch * np.sqrt(dt)
 
-    # Clamp φ to [0, ~2] (can't go negative, soft upper bound from the potential)
+    # Clamp φ ≥ 0
     phi = np.clip(phi, 0, 3.0)
 
     # ── Store ───────────────────────────────────────────────────
