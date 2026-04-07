@@ -30,6 +30,33 @@ def default_taus(K=10):
     return np.logspace(np.log10(0.1), np.log10(3000.0), K)
 
 
+def default_amplitudes(taus):
+    """Return 1/f-like amplitudes for an ordered timescale spectrum.
+
+    The timescales are assumed to represent progressively slower
+    environmental modes. We keep the amplitudes O(1) while ensuring that
+    slower modes have larger stationary variance than faster modes.
+
+    Parameters
+    ----------
+    taus : array-like, shape (K,)
+        Autocorrelation times in seconds.
+
+    Returns
+    -------
+    amplitudes : ndarray, shape (K,)
+        Monotonically increasing amplitudes when ``taus`` is ascending.
+    """
+    taus = np.asarray(taus, dtype=float)
+    if taus.ndim != 1 or len(taus) == 0:
+        return np.array([], dtype=float)
+
+    # Rank modes by timescale so the slowest mode gets the largest amplitude
+    # while preserving the modest O(1) scale used by the original runs.
+    tau_rank = np.argsort(np.argsort(taus))
+    return 1.0 / np.sqrt(len(taus) - tau_rank)
+
+
 def generate_multimode_env(n_steps, dt, n_channels, taus, amplitudes=None,
                            seed=42):
     """Generate a multi-mode OU environment signal.
@@ -50,8 +77,9 @@ def generate_multimode_env(n_steps, dt, n_channels, taus, amplitudes=None,
     taus : array-like, shape (K,)
         Autocorrelation time for each OU mode (seconds).
     amplitudes : array-like, shape (K,), optional
-        Amplitude for each mode.  If None, uses 1/f-like scaling:
-        ``A_k = 1.0 / sqrt(k + 1)``.
+        Stationary standard deviation for each mode. If None, uses a
+        rank-ordered 1/f-like profile so slower modes have larger
+        amplitude than faster modes.
     seed : int
         Random seed for reproducibility.
 
@@ -69,9 +97,11 @@ def generate_multimode_env(n_steps, dt, n_channels, taus, amplitudes=None,
     K = len(taus)
 
     if amplitudes is None:
-        amplitudes = np.array([1.0 / np.sqrt(k + 1) for k in range(K)])
+        amplitudes = default_amplitudes(taus)
     else:
         amplitudes = np.asarray(amplitudes, dtype=float)
+        if amplitudes.shape != taus.shape:
+            raise ValueError("amplitudes must have the same shape as taus")
 
     env_total = np.zeros((n_steps, n_channels))
     env_modes = []
@@ -83,6 +113,9 @@ def generate_multimode_env(n_steps, dt, n_channels, taus, amplitudes=None,
         noise_scale = amp_k * np.sqrt(2.0 * dt / tau_k)
 
         mode = np.zeros((n_steps, n_channels))
+        # Warm-start from the stationary distribution so slow modes are
+        # represented correctly even in finite-time simulations.
+        mode[0] = amp_k * rng.randn(n_channels)
         for t in range(1, n_steps):
             mode[t] = mode[t - 1] * decay + noise_scale * rng.randn(n_channels)
 
@@ -124,6 +157,7 @@ def generate_simple_env(n_steps, dt, n_channels, tau=2.0, sigma=0.5,
     noise_scale = sigma * np.sqrt(2.0 * dt / tau)
 
     env = np.zeros((n_steps, n_channels))
+    env[0] = sigma * rng.randn(n_channels)
     for t in range(1, n_steps):
         env[t] = env[t - 1] * decay + noise_scale * rng.randn(n_channels)
 
