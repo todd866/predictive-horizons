@@ -21,6 +21,7 @@ Author: Ian Todd
 
 import sys
 import time
+import json
 import argparse
 from pathlib import Path
 
@@ -37,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from celegans import (
     load_worm_data, build_coupling_matrices, build_grid_mapping,
     WormState, WormParams, assign_frequencies, step,
-    generate_multimode_env, default_taus,
+    generate_multimode_env, default_taus, default_amplitudes,
     d_eff, d_eff_timeseries, spectral_overlap, motor_correlation,
     classify_trajectory, mi_profile,
     MetabolicBudget, UnlimitedBudget,
@@ -48,6 +49,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--T', type=float, default=1000.0)
 parser.add_argument('--K', type=int, default=8)
 parser.add_argument('--no-budget', action='store_true')
+parser.add_argument('--parallel', action='store_true', default=True,
+                    help='Run models in parallel on multiple cores (default: on)')
+parser.add_argument('--no-parallel', dest='parallel', action='store_false',
+                    help='Run models sequentially')
 args, _ = parser.parse_known_args()
 
 # ── Simulation parameters ─────────────────────────────────────────────
@@ -76,7 +81,9 @@ colors = ['#2196F3', '#FF9800', '#9C27B0', '#EF5350']
 
 DATA_DIR = Path(__file__).parent / "openworm"
 FIG_DIR = Path(__file__).parent / "figures"
+RESULTS_DIR = Path(__file__).parent / "results"
 FIG_DIR.mkdir(exist_ok=True)
+RESULTS_DIR.mkdir(exist_ok=True)
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. Load data and build coupling matrices
@@ -103,13 +110,13 @@ print(f"  Grid: Nx = {Nx}, n_sensors = {n_sensors}")
 # ══════════════════════════════════════════════════════════════════════
 print("\n[2/5] Generating multi-mode environment...")
 taus = default_taus(K_env)
-# 1/f amplitudes: A_k = 1 / sqrt(k+1)
-amplitudes = np.array([1.0 / np.sqrt(k + 1) for k in range(K_env)])
+amplitudes = default_amplitudes(taus)
 
 env_total, env_modes, taus_used = generate_multimode_env(
     n_steps, dt, n_sensors, taus, amplitudes=amplitudes, seed=42,
 )
 print(f"  Modes: {K_env}, taus = [{taus[0]:.2f} .. {taus[-1]:.1f}] s")
+print(f"  Amplitudes: [{amplitudes[0]:.3f} .. {amplitudes[-1]:.3f}]")
 print(f"  Env shape: {env_total.shape}")
 
 
@@ -204,10 +211,24 @@ def run_model(label, use_eph, use_npp, seed=77):
 
 
 print("\n[3/5] Running models...")
-results = []
-for label, eph, npp in MODEL_CONFIGS:
-    r = run_model(label, eph, npp, seed=77)
-    results.append(r)
+
+def _run_one(args):
+    """Wrapper for parallel execution."""
+    label, eph, npp = args
+    return run_model(label, eph, npp, seed=77)
+
+if args.parallel and len(MODEL_CONFIGS) > 1:
+    import multiprocessing as mp
+    ctx = mp.get_context('fork')
+    n_workers = min(len(MODEL_CONFIGS), mp.cpu_count())
+    print(f"  Running {len(MODEL_CONFIGS)} models on {n_workers} cores...")
+    with ctx.Pool(n_workers) as pool:
+        results = pool.map(_run_one, MODEL_CONFIGS)
+else:
+    results = []
+    for label, eph, npp in MODEL_CONFIGS:
+        r = run_model(label, eph, npp, seed=77)
+        results.append(r)
 
 # ══════════════════════════════════════════════════════════════════════
 # 4. Analysis
@@ -248,6 +269,7 @@ for r in results:
     r['mi_lags'] = delta_ts_mi
     r['mi_vals'] = mi_profile(states, r['env_stored'], delta_ts_mi, dt_stored,
                               n_pcs=50, max_samples=3000)
+    r['mi_peak'] = float(r['mi_vals'].max()) if len(r['mi_vals']) else 0.0
 
     # Summary stats
     r['mean_budget'] = float(r['budget_hist'].mean())
@@ -397,4 +419,49 @@ for r in results:
           f"{r['mean_budget']:7.3f} {r['mean_phi']:6.3f} "
           f"{r['mean_order_r']:6.3f} {r['wall_time']:8.1f}")
 print("=" * 90)
+
+
+def _tag(value):
+    return f"{value:g}".replace('.', 'p')
+
+
+summary_path = RESULTS_DIR / (
+    f"nonergodic_summary_T{_tag(T_total)}_K{K_env}"
+    f"{'_nobudget' if args.no_budget else ''}.json"
+)
+summary_payload = {
+    "simulation": {
+        "T_total_s": float(T_total),
+        "T_trans_s": float(T_trans),
+        "dt_s": float(dt),
+        "subsample": int(subsample),
+        "K_env": int(K_env),
+        "budget_enabled": not args.no_budget,
+        "taus_s": [float(x) for x in taus_used],
+        "amplitudes": [float(x) for x in amplitudes],
+    },
+    "models": [
+        {
+            "label": r["label"],
+            "d_eff": float(r["d_eff_overall"]),
+            "trajectory": r["traj_class"],
+            "spectral_overlap": float(r["total_overlap"]),
+            "mi_peak_nats": float(r["mi_peak"]),
+            "mean_budget": float(r["mean_budget"]),
+            "va_vb_corr": float(r["va_vb_corr"]),
+            "mean_phi": float(r["mean_phi"]),
+            "mean_order_r": float(r["mean_order_r"]),
+            "wall_time_s": float(r["wall_time"]),
+            "table_row": (
+                f"{r['label']} & {r['d_eff_overall']:.2f} & "
+                f"{r['total_overlap']:.4f} & {r['traj_class']} & "
+                f"{r['mi_peak']:.3f} & {r['mean_budget']:.3f} \\\\"
+            ),
+        }
+        for r in results
+    ],
+}
+with open(summary_path, "w") as f:
+    json.dump(summary_payload, f, indent=2)
+print(f"\nSaved summary: {summary_path}")
 print("\nDone!")

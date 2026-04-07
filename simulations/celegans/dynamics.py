@@ -264,8 +264,8 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
 
     # ── 2. Sensory drive from environment ──────────────────────────
     drive = np.zeros(N)
-    for k, idx in enumerate(sensory_indices[:n_sensors]):
-        drive[idx] = p.K_drive * env_signal[k]
+    si = np.array(sensory_indices[:n_sensors])
+    drive[si] = p.K_drive * env_signal[:len(si)]
 
     # ── 3. Phase differences (vectorised NxN) ─────────────────────
     sin_diff = np.sin(theta[:, None] - theta[None, :])
@@ -286,14 +286,11 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
 
     # ── 6. Layer 3: Neuropeptide modulation (slow frequency mod) ──
     if use_npp:
-        npp_input = np.zeros(N)
         activity_npp = 0.5 + 0.5 * np.cos(theta)
-        for ni in range(N):
-            npp_input[ni] = np.sum(
-                W_npp_norm[:, ni] * activity_npp * state.u_npp[:, ni]
-            )
+        # Vectorized: npp_input[j] = sum_i W_npp[i,j] * activity[i] * u_npp[i,j]
+        npp_input = np.sum(W_npp_norm * (activity_npp[:, None] * state.u_npp), axis=0)
 
-        dnpp = (-state.npp_mod + p.K_npp * npp_input) / p.tau_npp
+        dnpp = (-state.npp_mod + budget_scale * p.K_npp * npp_input) / p.tau_npp
         state.npp_mod += dnpp * dt
 
     # ── 7. Effective frequency ─────────────────────────────────────
@@ -301,10 +298,10 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
 
     # ── 8. Proprioception (motor neurons get body curvature feedback)
     proprio = np.zeros(N)
-    if use_body:
+    if use_body and len(motor_indices) > 0:
         kappa_n = interp_field(state.kappa, n_left, n_frac)
-        for i in motor_indices:
-            proprio[i] = 0.3 * np.sin(kappa_n[i] - theta[i])
+        mi = np.array(motor_indices)
+        proprio[mi] = 0.3 * np.sin(kappa_n[mi] - theta[mi])
 
     # ── 9. Phase update ────────────────────────────────────────────
     dtheta = omega_eff + drive + conn_coupling + eph_coupling + proprio
@@ -336,15 +333,12 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         dVdphi = -p.a_LG * phi + p.b_LG * phi**3
         lap_phi = laplacian_1d(phi, dx)
 
-        source = np.zeros(Nx)
-        for gi in range(Nx):
-            w = neuron_w_grid[gi]
-            mask = w > 1e-6
-            if mask.sum() < 2:
-                continue
-            wm = w[mask]
-            r_local = np.abs(np.sum(wm * np.exp(1j * theta[mask])) / wm.sum())
-            source[gi] = p.gamma_pump * r_local
+        # Vectorized coherence source: local Kuramoto order parameter
+        phases = np.exp(1j * theta)
+        weighted = neuron_w_grid * phases[None, :]  # (Nx, N)
+        w_sums = neuron_w_grid.sum(axis=1)
+        r_local = np.abs(weighted.sum(axis=1)) / np.maximum(w_sums, 1e-10)
+        source = p.gamma_pump * r_local
 
         dphi = (-dVdphi + p.kappa_phi * lap_phi + source) / p.tau_phi
         dphi = np.clip(dphi, -10, 10)
@@ -358,9 +352,9 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
     # ── 13. Body mechanics update ──────────────────────────────────
     if use_body:
         F_muscle = np.zeros(Nx)
-        for i in motor_indices:
-            gi = neuron_body_idx[i]
-            F_muscle[gi] += p.K_muscle * np.sin(theta[i])
+        if len(motor_indices) > 0:
+            mi = np.array(motor_indices)
+            np.add.at(F_muscle, neuron_body_idx[mi], p.K_muscle * np.sin(theta[mi]))
 
         dkdot = (-p.epsilon_body * state.kappa
                  - p.gamma_body * state.kappa_dot
