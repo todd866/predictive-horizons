@@ -37,14 +37,21 @@ def test_coupling_matrices():
 
 
 def test_environment_generation():
-    from celegans.environment import generate_multimode_env, default_taus
+    from celegans.environment import (
+        generate_multimode_env, default_taus, default_amplitudes
+    )
     taus = default_taus(K=5)
     assert len(taus) == 5
-    env, modes, _ = generate_multimode_env(1000, 0.01, 10, taus)
-    assert env.shape == (1000, 10)
-    assert len(modes) == 5
-    # Slow modes should have larger variance
-    assert modes[0].std() > modes[-1].std()
+    amps = default_amplitudes(taus)
+    assert np.all(np.diff(amps) > 0)
+
+    env, modes, _ = generate_multimode_env(
+        5000, 0.01, 4, np.array([0.1, 1.0, 10.0]), seed=42
+    )
+    assert env.shape == (5000, 4)
+    assert len(modes) == 3
+    # Slow modes should have larger variance when amplitudes increase with tau.
+    assert modes[0].std() < modes[-1].std()
 
 
 def test_dynamics_100_steps():
@@ -129,3 +136,26 @@ def test_full_integration():
     assert diag['order_r'] > 0
     assert diag['mean_phi'] > 0
     assert budget.budget_scale > 0
+
+
+def test_arena_concentration():
+    from celegans.arena import Arena
+    arena = Arena(
+        radius_mm=50.0,
+        sources=[{'x': 40.0, 'y': 0.0, 'strength': 1.0, 'sigma': 15.0}]
+    )
+    c_at_source = arena.concentration(40.0, 0.0)
+    c_far = arena.concentration(-40.0, 0.0)
+    assert c_at_source > 0.9
+    assert c_far < 0.1
+    gx, gy = arena.gradient(0.0, 0.0)
+    assert gx > 0
+
+
+def test_arena_bounds():
+    from celegans.arena import Arena
+    arena = Arena(radius_mm=50.0, sources=[])
+    assert arena.in_bounds(0.0, 0.0)
+    assert arena.in_bounds(49.0, 0.0)
+    assert not arena.in_bounds(51.0, 0.0)
+    assert not arena.in_bounds(35.0, 36.0)
