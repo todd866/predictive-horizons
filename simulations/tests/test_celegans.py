@@ -159,3 +159,65 @@ def test_arena_bounds():
     assert arena.in_bounds(49.0, 0.0)
     assert not arena.in_bounds(51.0, 0.0)
     assert not arena.in_bounds(35.0, 36.0)
+
+
+def test_body_straight():
+    """A worm with zero curvature should be a straight line."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(
+        n_segments=50, body_length_mm=1.0,
+        x0=0.0, y0=0.0, heading0=0.0
+    )
+    kappa_grid = np.zeros(50)
+    grid_x = np.linspace(0, 1, 50)
+    body.set_curvature(kappa_grid, grid_x)
+    pos = body.segment_positions()
+    assert pos.shape == (50, 2)
+    assert np.allclose(pos[:, 1], 0.0, atol=1e-10)
+    assert abs(pos[-1, 0] - pos[0, 0]) > 0.9
+
+
+def test_body_curved():
+    """Constant positive curvature should produce a circular arc."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(
+        n_segments=50, body_length_mm=1.0,
+        x0=0.0, y0=0.0, heading0=0.0, kappa_scale=1.0
+    )
+    kappa_grid = np.full(50, 2 * np.pi)
+    grid_x = np.linspace(0, 1, 50)
+    body.set_curvature(kappa_grid, grid_x)
+    pos = body.segment_positions()
+    dist = np.sqrt((pos[-1, 0] - pos[0, 0])**2 + (pos[-1, 1] - pos[0, 1])**2)
+    assert dist < 0.15
+
+
+def test_body_head_position():
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(
+        n_segments=50, body_length_mm=1.0,
+        x0=10.0, y0=5.0, heading0=np.pi / 4
+    )
+    kappa_grid = np.zeros(50)
+    grid_x = np.linspace(0, 1, 50)
+    body.set_curvature(kappa_grid, grid_x)
+    hx, hy = body.head_position()
+    assert hx > 10.0
+    assert hy > 5.0
+
+
+def test_body_bilateral_points():
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(
+        n_segments=50, body_length_mm=1.0,
+        x0=0.0, y0=0.0, heading0=0.0
+    )
+    kappa_grid = np.zeros(50)
+    grid_x = np.linspace(0, 1, 50)
+    body.set_curvature(kappa_grid, grid_x)
+    lx, ly, rx, ry = body.bilateral_head_points()
+    hx, hy = body.head_position()
+    assert abs(lx - rx) < 1e-10
+    assert ly > hy
+    assert ry < hy
+    assert abs(ly - hy - 0.05) < 1e-10
