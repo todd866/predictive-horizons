@@ -1,0 +1,78 @@
+{
+  "simulation": {
+    "T_total_s": 100.0,
+    "T_trans_s": 5.0,
+    "dt_s": 0.001,
+    "subsample": 20,
+    "K_env": 5,
+    "budget_enabled": true,
+    "taus_s": [
+      0.1,
+      1.3160740129524926,
+      17.320508075688775,
+      227.95070569547784,
+      3000.0000000000014
+    ],
+    "amplitudes": [
+      0.4472135954999579,
+      0.5,
+      0.5773502691896258,
+      0.7071067811865475,
+      1.0
+    ]
+  },
+  "models": [
+    {
+      "label": "Connectome",
+      "d_eff": 88.02158058620599,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.0008578092540077094,
+      "mi_peak_nats": 0.5139049654906742,
+      "mean_budget": 1.0,
+      "va_vb_corr": 0.32286441386898823,
+      "mean_phi": 0.570623345477327,
+      "mean_order_r": 0.05465506489868613,
+      "wall_time_s": 140.88884019851685,
+      "table_row": "Connectome & 88.02 & 0.0009 & resilient & 0.514 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Ephaptic",
+      "d_eff": 87.85479706247449,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.0008752251237379068,
+      "mi_peak_nats": 0.5316838135833564,
+      "mean_budget": 1.0,
+      "va_vb_corr": 0.33608401768247953,
+      "mean_phi": 0.5721053283677318,
+      "mean_order_r": 0.056162547682078234,
+      "wall_time_s": 198.79064989089966,
+      "table_row": "+ Ephaptic & 87.85 & 0.0009 & resilient & 0.532 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Neuropeptide",
+      "d_eff": 114.37454229742649,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.0006632817242537517,
+      "mi_peak_nats": 0.5095744573925387,
+      "mean_budget": 0.7291799949721498,
+      "va_vb_corr": 0.013280279874949045,
+      "mean_phi": 0.5639947131322816,
+      "mean_order_r": 0.05143130406444401,
+      "wall_time_s": 199.6750407218933,
+      "table_row": "+ Neuropeptide & 114.37 & 0.0007 & resilient & 0.510 & 0.729 \\\\"
+    },
+    {
+      "label": "Full trilayer",
+      "d_eff": 114.50603017751476,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.0006754292278686681,
+      "mi_peak_nats": 0.5057482074820783,
+      "mean_budget": 0.7271992867736335,
+      "va_vb_corr": 0.028497095124093125,
+      "mean_phi": 0.5639783913404129,
+      "mean_order_r": 0.05083083621410066,
+      "wall_time_s": 245.75304293632507,
+      "table_row": "Full trilayer & 114.51 & 0.0007 & resilient & 0.506 & 0.727 \\\\"
+    }
+  ]
+}

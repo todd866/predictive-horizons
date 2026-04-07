@@ -1,0 +1,84 @@
+{
+  "simulation": {
+    "T_total_s": 1000.0,
+    "T_trans_s": 50.0,
+    "dt_s": 0.001,
+    "subsample": 20,
+    "K_env": 8,
+    "budget_enabled": true,
+    "taus_s": [
+      0.1,
+      0.4361026750842235,
+      1.9018554321561583,
+      8.294042415867626,
+      36.17054084821888,
+      157.74069623151425,
+      687.9113959621129,
+      3000.0000000000014
+    ],
+    "amplitudes": [
+      0.35355339059327373,
+      0.3779644730092272,
+      0.4082482904638631,
+      0.4472135954999579,
+      0.5,
+      0.5773502691896258,
+      0.7071067811865475,
+      1.0
+    ]
+  },
+  "models": [
+    {
+      "label": "Connectome",
+      "d_eff": 344.09932943163545,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.00032318890797456643,
+      "mi_peak_nats": 0.19146834254027922,
+      "mean_budget": 1.0,
+      "va_vb_corr": 0.32289705810176017,
+      "mean_phi": 0.5646953062507984,
+      "mean_order_r": 0.05541717821027298,
+      "wall_time_s": 3600.494799852371,
+      "table_row": "Connectome & 344.10 & 0.0003 & resilient & 0.191 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Ephaptic",
+      "d_eff": 345.18611667004933,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.00022879004427252554,
+      "mi_peak_nats": 0.19502116623339205,
+      "mean_budget": 1.0,
+      "va_vb_corr": 0.29856183734643726,
+      "mean_phi": 0.5668723978338216,
+      "mean_order_r": 0.05954526610570509,
+      "wall_time_s": 4563.487509965897,
+      "table_row": "+ Ephaptic & 345.19 & 0.0002 & resilient & 0.195 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Neuropeptide",
+      "d_eff": 455.51879902795883,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.00030090937611296757,
+      "mi_peak_nats": 0.19077931937023251,
+      "mean_budget": 0.6029313978829006,
+      "va_vb_corr": 0.035324228700075254,
+      "mean_phi": 0.5586654528511967,
+      "mean_order_r": 0.05102140826667385,
+      "wall_time_s": 4412.456742286682,
+      "table_row": "+ Neuropeptide & 455.52 & 0.0003 & resilient & 0.191 & 0.603 \\\\"
+    },
+    {
+      "label": "Full trilayer",
+      "d_eff": 455.62282508905633,
+      "trajectory": "resilient",
+      "spectral_overlap": 0.00026060226917244954,
+      "mi_peak_nats": 0.19929061204749843,
+      "mean_budget": 0.6018733588663642,
+      "va_vb_corr": 0.01897592637033258,
+      "mean_phi": 0.5582302066088671,
+      "mean_order_r": 0.0501091710786228,
+      "wall_time_s": 4987.757514953613,
+      "table_row": "Full trilayer & 455.62 & 0.0003 & resilient & 0.199 & 0.602 \\\\"
+    }
+  ]
+}

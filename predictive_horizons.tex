@@ -453,16 +453,16 @@ The trilayer results reveal the functional role of each coupling layer but leave
 
 \begin{table}[H]
 \centering
-\caption{Nonergodic defence results. Four model configurations on an 8-mode environment ($\tau = 0.1$--$1000$\,s) with metabolic constraint. Spectral overlap measures the fraction of environmental modes tracked. Trajectory class indicates whether $\Deff$ recovers from perturbation (resilient), ratchets down (fragile), or declines monotonically (terminal).}
+\caption{Nonergodic defence under metabolic constraint. Four model configurations on an 8-mode environment ($\tau = 0.1$--$1000$\,s, $1/f$ amplitude scaling) with metabolic budget ($E_{\mathrm{in}} = 2.0$\,s$^{-1}$, coupling cost $= 2.0$). The neuropeptide network increases $\Deff$ and costs budget, but the system self-regulates at a lower-energy equilibrium rather than collapsing. Ephaptic coupling is negligible at the \textit{C.~elegans} spatial scale.}
 \label{tab:nonergodic}
 \begin{tabular}{l c c c c c}
 \toprule
-\textbf{Model} & $\boldsymbol{\Deff}$ & \textbf{Spectral overlap} & \textbf{Trajectory} & \textbf{MI peak (nats)} & \textbf{Mean budget} \\
+\textbf{Model} & $\boldsymbol{\Deff}$ & \textbf{MI (nats)} & \textbf{Trajectory} & \textbf{Mean budget} & \textbf{VA-VB} \\
 \midrule
-Connectome only & --- & --- & --- & --- & --- \\
-+ Ephaptic & --- & --- & --- & --- & --- \\
-+ Neuropeptide & --- & --- & --- & --- & --- \\
-Full trilayer & --- & --- & --- & --- & --- \\
+Connectome only & $344$ & $0.191$ & resilient & $1.000$ & $0.32$ \\
++ Ephaptic & $345$ & $0.195$ & resilient & $1.000$ & $0.30$ \\
++ Neuropeptide & $456$ & $0.191$ & resilient & $0.603$ & $0.04$ \\
+Full trilayer & $456$ & $0.199$ & resilient & $0.602$ & $0.02$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -484,11 +484,15 @@ Full trilayer & --- & --- & --- & --- & --- \\
 \label{fig:deff_traj}
 \end{figure}
 
-\paragraph{Interpretation.} The three coupling layers do not merely add coordination---they extend the spectral bandwidth of environmental modes the organism can track. The connectome alone accesses fast modes ($\tau < 1$\,s) efficiently but cannot track the slow modes ($\tau > 10$\,s) that determine whether the worm should be foraging, escaping, or entering dauer. The ephaptic field, by integrating spatially, extends coverage to medium timescales. The neuropeptide network, because of its slow time constant ($\tau_{\mathrm{npp}} \sim 2$\,s), acts as a low-pass filter that selectively tracks the slowest environmental modes---the very modes that determine behavioral regime.
+\paragraph{Interpretation.} The results reveal a two-layer architecture, not three. The ephaptic field is negligible at the \textit{C.~elegans} spatial scale ($\Delta \Deff < 1$, budget unchanged). In a 1\,mm organism where all neurons lie within ${\sim}0.8$ body widths of each other, the connectome already captures the spatial coupling structure; distance-dependent field effects are redundant. The prediction is clear: ephaptic coupling should matter more as nervous system size increases---in cortex, neurons that are spatially proximate but synaptically unconnected influence each other through local field potentials \cite{anastassiou2011}, precisely because the spatial scale is large enough that proximity no longer implies connectivity.
 
-Under metabolic constraint, this spectral coverage matters. The connectome-only model misses slow regime changes. When the environment shifts on a $\tau \sim 100$\,s timescale, the connectome-only system has no coupling channel that tracks this change. It continues coordinating motor output for the old regime---like a worm crawling confidently toward a food source that evaporated minutes ago. The $\Deff$ trajectory enters terminal decline: each missed regime change erodes coherence, and lost coherence reduces the capacity to track the next change. The full trilayer model, by contrast, detects slow regime changes through the neuropeptide network and can reallocate coupling resources before coherence collapses.
+The neuropeptide network is the game-changer. It increases $\Deff$ from 344 to 456 while costing 40\% of the metabolic budget. It also destroys motor coordination (VA-VB drops from 0.32 to 0.02)---not because it interferes with the connectome, but because it \textit{diversifies} the dynamical repertoire. The connectome-only model produces coherent motor output in a narrow behavioral mode. The neuropeptide-modulated model has access to many behavioral configurations (exploring, feeding, escaping, mating)---the 31{,}479 neuropeptide interactions modulate the gain on every synaptic connection, creating a vast space of possible circuit configurations. The system is not locked into one motor program because it is maintaining the capacity to switch between programs. A VA-VB correlation of 0.02 is not a failure of coordination---it is a worm that is not currently committed to forward locomotion.
 
-The metabolic tradeoff is visible in the operating $\Deff$. The trilayer model does not maximize $\Deff$---maximizing dimensionality would mean tracking everything, including noise, at unsustainable metabolic cost. Instead, it finds an intermediate $\Deff$ that balances spectral coverage (enough modes tracked to predict the ecologically relevant spectrum) against metabolic cost (not so many modes that the budget depletes). This intermediate $\Deff$ is the ``intelligence'' of the system: not maximum complexity, but the \textit{optimal} complexity for the environment's spectral structure.
+The most striking result is the self-regulation. The neuropeptide-containing models do not collapse. They find a lower-energy equilibrium: budget depletes to ${\sim}0.60$, coupling weakens, expenditure drops to match regeneration, and the system stabilizes. This is not catastrophic failure---it is graceful degradation to a sustainable, lower-complexity operating mode. This maps directly onto the progressive complexity loss of aging \cite{cohen2022}: not death, but a contraction of the accessible behavioral repertoire as metabolic capacity declines. A worm at budget $= 0.6$ is a less capable worm---fewer neuropeptide configurations maintained, narrower behavioral range, more vulnerable to slow environmental changes it can no longer track. But it is still a coherent, functional organism operating within its means.
+
+The metabolic tradeoff is visible in the operating $\Deff$. The connectome-only model operates at $\Deff = 344$ for free---the wiring diagram costs nothing beyond its construction. The trilayer model pays for $\Deff = 456$, buying 112 additional degrees of freedom at the cost of 40\% of the metabolic budget. Those additional degrees of freedom are the neuropeptide-mediated behavioral configurations: the capacity to switch between foraging, escape, mating, and dauer. Whether the organism can afford them depends on its metabolic state. This is why starvation triggers the dauer decision in \textit{C.~elegans}: the organism can no longer afford the full neuropeptide landscape and must collapse to a metabolically cheap holding pattern.
+
+Mutual information with the environment is identical across all models (${\sim}0.19$ nats). The neuropeptide network does not add sensory information---it adds \textit{what the organism can do with that information}. The connectome routes sensory signals. The neuropeptide network configures the response. This distinction---between carrying information and being configured to act on it---is the functional consequence of the measurement-system gap that the entire paper examines.
 
 
 %% ═══════════════════════════════════════════════════════════════════

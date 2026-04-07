@@ -1,0 +1,74 @@
+{
+  "simulation": {
+    "T_total_s": 2.0,
+    "T_trans_s": 0.1,
+    "dt_s": 0.001,
+    "subsample": 20,
+    "K_env": 3,
+    "budget_enabled": false,
+    "taus_s": [
+      0.1,
+      17.320508075688775,
+      3000.0000000000014
+    ],
+    "amplitudes": [
+      0.5773502691896258,
+      0.7071067811865475,
+      1.0
+    ]
+  },
+  "models": [
+    {
+      "label": "Connectome",
+      "d_eff": 3.0845200456717285,
+      "trajectory": "unknown",
+      "spectral_overlap": 0.06985194868257398,
+      "mi_peak_nats": 13.33129087395784,
+      "mean_budget": 1.0,
+      "va_vb_corr": -0.6851747221555333,
+      "mean_phi": 0.3729679803959835,
+      "mean_order_r": 0.05051335610022961,
+      "wall_time_s": 7.304074048995972,
+      "table_row": "Connectome & 3.08 & 0.0699 & unknown & 13.331 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Ephaptic",
+      "d_eff": 3.0840880257050993,
+      "trajectory": "unknown",
+      "spectral_overlap": 0.06984216286220411,
+      "mi_peak_nats": 13.331570371316914,
+      "mean_budget": 1.0,
+      "va_vb_corr": -0.6928501683271975,
+      "mean_phi": 0.37358317302902644,
+      "mean_order_r": 0.0509700311115846,
+      "wall_time_s": 9.516170263290405,
+      "table_row": "+ Ephaptic & 3.08 & 0.0698 & unknown & 13.332 & 1.000 \\\\"
+    },
+    {
+      "label": "+ Neuropeptide",
+      "d_eff": 4.147801139827277,
+      "trajectory": "unknown",
+      "spectral_overlap": 0.06070880829136407,
+      "mi_peak_nats": 14.217232348250832,
+      "mean_budget": 1.0,
+      "va_vb_corr": -0.9308580824701604,
+      "mean_phi": 0.36871768732315524,
+      "mean_order_r": 0.05385650643471201,
+      "wall_time_s": 12.26477313041687,
+      "table_row": "+ Neuropeptide & 4.15 & 0.0607 & unknown & 14.217 & 1.000 \\\\"
+    },
+    {
+      "label": "Full trilayer",
+      "d_eff": 4.147258852443825,
+      "trajectory": "unknown",
+      "spectral_overlap": 0.060716241901240024,
+      "mi_peak_nats": 14.217418498784056,
+      "mean_budget": 1.0,
+      "va_vb_corr": -0.9269420001961077,
+      "mean_phi": 0.36927767206785145,
+      "mean_order_r": 0.0544560323326083,
+      "wall_time_s": 15.12619423866272,
+      "table_row": "Full trilayer & 4.15 & 0.0607 & unknown & 14.217 & 1.000 \\\\"
+    }
+  ]
+}
