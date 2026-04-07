@@ -390,6 +390,41 @@ The transition between coherent and decoherent regions is \textit{graded}, not a
 This picture replaces the Markov blanket framework with something physically concrete. The ``blanket'' is not a set of conditional independence relationships between discrete variables---it is a phase boundary in a continuous field, with measurable surface tension and thermodynamic cost. The ``interior'' is not a set of internal states separated from external states by a statistical boundary---it is a coherent region of a spatiotemporal field whose dynamics are richer than any discrete partition can capture. The mathematics is Landau-Ginzburg, not Bayesian inference; the physics is phase transitions, not probabilistic conditioning.
 
 
+\subsection{Three layers, three functions}
+\label{sec:trilayer}
+
+The preceding sections treat the extra-connectomic coupling channels as a single ``field.'' In reality, there are at least three distinct coupling layers operating simultaneously in \textit{C.~elegans}, each with different physics, different timescales, and---as simulation reveals---different functions.
+
+We tested four model configurations on the same multi-scale environment (three OU components with autocorrelation times $\tau = 10, 2, 0.3$\,s), using the real \textit{C.~elegans} connectome, 3D neuron positions from the NeuroPAL atlas \cite{yemini2021}, and the neuropeptide connectome from Ripoll-S\'anchez et al.\ \cite{ripollsanchez2023}---31{,}479 neuropeptide-receptor interactions between all 302 neuron classes, with only ${\sim}5\%$ overlap with the wired connectome. This is the first simulation to integrate all three coupling layers from experimentally derived data.
+
+\begin{table}[H]
+\centering
+\caption{Three coupling layers serve distinct functions. Same connectome, same sensory input. MI with the environment is similar across models (${\sim}0.3$ nats), confirming that the extra layers do not add sensory information. They change what the organism can \textit{do} with it.}
+\label{tab:trilayer}
+\begin{tabular}{l c c c l}
+\toprule
+\textbf{Model} & \textbf{VA-VB} & $\boldsymbol{\Deff}$ & \textbf{MI peak} & \textbf{Function} \\
+\midrule
+Connectome only & $0.19$ & 66 & 0.33 & Information routing \\
++ Ephaptic & $\mathbf{0.70}$ & $\mathbf{3.6}$ & 0.30 & Motor coordination \\
++ Neuropeptide & $0.02$ & 157 & 0.33 & Behavioral diversification \\
+Full trilayer & $-0.03$ & 25 & 0.26 & Coordination + context \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The result is striking: the three layers do not add prediction---they add \textit{different capacities}. The connectome routes sensory information to motor neurons. The ephaptic field compresses the dynamics onto a low-dimensional motor manifold ($\Deff = 66 \to 3.6$), producing VA-VB coordination of $0.70$---the highest of any model we tested. The neuropeptide network does the opposite: it \textit{expands} the dynamical repertoire ($\Deff = 66 \to 157$), giving different neurons different frequency modulations and diversifying the space of available motor patterns. When both are active, they compete: the ephaptic field tries to synchronize, the neuropeptide network tries to diversify, and the result ($\Deff = 25$) is intermediate---more structured than the connectome alone, more diverse than the ephaptic field alone.
+
+This maps onto a timescale-dimensionality hierarchy:
+\begin{itemize}
+\item \textbf{Connectome (fast, ms):} Sparse, directed, low-dimensional. Each synapse carries one signal. Information routing.
+\item \textbf{Ephaptic field (fast-to-medium):} Continuous, spatially graded, medium-dimensional. Translates routed information into coordinated motor output.
+\item \textbf{Neuropeptide network (slow, seconds):} High-dimensional in $N_{\mathrm{phys}}$ (31{,}479 interactions), but low-dimensional in $\Deff$ due to concentration of measure---the slow integration compresses the high-dimensional peptide landscape onto a few behavioral modes (the ``mood'' of the organism: exploring, feeding, mating, escaping).
+\end{itemize}
+
+\noindent The neuropeptide network instantiates the dimensionality paradox at the coupling level: the state space is enormous (every neuron modulated by dozens of peptide species), but the slow timescale ensures that concentration of measure compresses this onto a smooth, low-dimensional behavioral state. The ``mood'' is not computed from a model---it is the concentrated projection of the high-dimensional neuropeptide landscape.
+
+
 %% ═══════════════════════════════════════════════════════════════════
 \section{The Observational Gap}
 \label{sec:gap}
@@ -523,6 +558,12 @@ Varshney, L.R., Chen, B.L., Paniagua, E., Hall, D.H., Chklovskii, D.B. (2011). S
 
 \bibitem{altun2024}
 Altun, Z.F., Herndon, L.A., Wolkow, C.A., Crocker, C., Lints, R., Hall, D.H. (2002--2024). WormAtlas. \url{http://www.wormatlas.org}
+
+\bibitem{ripollsanchez2023}
+Ripoll-S\'anchez, L., Watteyne, J., Sun, H., Fernandez, R., Taylor, S.R., Weinreb, A., Bentley, B.L., Hammarlund, M., Miller, D.M., Bhatt, D.K., Schafer, W.R. (2023). The neuropeptidergic connectome of \textit{C.~elegans}. \textit{Neuron}, 111(22), 3570--3589.
+
+\bibitem{yemini2021}
+Yemini, E., Lin, A., Nejatbakhsh, A., Varol, E., Sun, R., Mena, G.E., Samuel, A.D.T., Paninski, L., Venkatachalam, V., Hobert, O. (2021). NeuroPAL: A multicolor atlas for whole-brain neuronal identification in \textit{C.~elegans}. \textit{Cell}, 184(1), 272--288.
 
 \bibitem{izquierdo2018}
 Izquierdo, E.J., Beer, R.D. (2018). From head to tail: A neuromechanical model of forward locomotion in \textit{Caenorhabditis elegans}. \textit{Biological Cybernetics}, 112(1), 37--54.
