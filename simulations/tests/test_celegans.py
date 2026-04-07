@@ -331,3 +331,49 @@ def test_odor_circuit_bilateral_asymmetry():
         circuit.transduce(0.5, 0.5, dt)
     drive = circuit.transduce(0.6, 0.4, dt)
     assert drive[2] > drive[3]
+
+
+def test_trajectory_recorder_chemotaxis_index():
+    from celegans.behavior import TrajectoryRecorder
+    rec = TrajectoryRecorder()
+    for i in range(100):
+        x = i * 0.1
+        rec.record(t=i * 0.1, x=x, y=0.0, heading=0.0,
+                   v_forward=0.1, omega=0.0, C_head=0.0)
+    ci = rec.chemotaxis_index(10.0, 0.0)
+    assert ci > 0.9
+
+
+def test_trajectory_recorder_path_efficiency():
+    from celegans.behavior import TrajectoryRecorder
+    rec = TrajectoryRecorder()
+    for i in range(100):
+        rec.record(t=i * 0.1, x=i * 0.1, y=0.0, heading=0.0,
+                   v_forward=0.1, omega=0.0, C_head=0.0)
+    eff = rec.path_efficiency(10.0, 0.0)
+    assert eff > 0.95
+
+
+def test_classify_behavior_forward():
+    from celegans.behavior import TrajectoryRecorder
+    rec = TrajectoryRecorder()
+    for i in range(2000):
+        rec.record(t=i * 0.001, x=i * 0.001 * 0.2, y=0.0, heading=0.0,
+                   v_forward=0.2, omega=0.0, C_head=0.5)
+    states = rec.classify_behavior(dt=0.001, smoothing_window=0.1)
+    n_forward = sum(1 for s in states if s == 'forward')
+    assert n_forward / len(states) > 0.8
+
+
+def test_classify_behavior_reversal():
+    from celegans.behavior import TrajectoryRecorder
+    rec = TrajectoryRecorder()
+    for i in range(1000):
+        rec.record(t=i * 0.001, x=0.0, y=0.0, heading=0.0,
+                   v_forward=0.2, omega=0.0, C_head=0.5)
+    for i in range(1000):
+        rec.record(t=(1000 + i) * 0.001, x=0.0, y=0.0, heading=0.0,
+                   v_forward=-0.2, omega=0.0, C_head=0.5)
+    states = rec.classify_behavior(dt=0.001, smoothing_window=0.1)
+    assert 'reverse' in states
+    assert 'forward' in states
