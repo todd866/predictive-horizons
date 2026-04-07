@@ -377,3 +377,37 @@ def test_classify_behavior_reversal():
     states = rec.classify_behavior(dt=0.001, smoothing_window=0.1)
     assert 'reverse' in states
     assert 'forward' in states
+
+
+def test_external_drive():
+    """external_drive should override the default sensory drive."""
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams()
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    n_sensors = min(len(wd.sensory), 50)
+
+    # Run with env_signal
+    state1 = WormState(wd.N, 50, seed=42)
+    env_sig = np.zeros(n_sensors)
+    env_sig[0] = 5.0
+    for _ in range(10):
+        step(state1, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env_sig, dt=0.001)
+
+    # Run with external_drive targeting same neuron
+    state2 = WormState(wd.N, 50, seed=42)
+    ext_drive = np.zeros(wd.N)
+    ext_drive[wd.sensory[0]] = 5.0 * params.K_drive
+    dummy_env = np.zeros(n_sensors)
+    for _ in range(10):
+        step(state2, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, dummy_env, dt=0.001,
+             external_drive=ext_drive)
+
+    assert np.allclose(state1.theta, state2.theta, atol=1e-8)

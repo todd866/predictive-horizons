@@ -197,7 +197,8 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
          sensory_indices, motor_indices, n_sensors,
          env_signal, dt,
          use_eph=True, use_npp=True, use_phi=True, use_body=True,
-         budget_scale=1.0):
+         budget_scale=1.0,
+         external_drive=None):
     """Advance the simulation by one time step.
 
     This is the hot loop extracted from celegans_trilayer.py lines 375-471,
@@ -263,9 +264,12 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
     phi_clipped = np.clip(phi_n, 0, 1)
 
     # ── 2. Sensory drive from environment ──────────────────────────
-    drive = np.zeros(N)
-    si = np.array(sensory_indices[:n_sensors])
-    drive[si] = p.K_drive * env_signal[:len(si)]
+    if external_drive is not None:
+        drive = external_drive.copy()
+    else:
+        drive = np.zeros(N)
+        si = np.array(sensory_indices[:n_sensors])
+        drive[si] = p.K_drive * env_signal[:len(si)]
 
     # ── 3. Phase differences (vectorised NxN) ─────────────────────
     sin_diff = np.sin(theta[:, None] - theta[None, :])
