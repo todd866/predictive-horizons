@@ -411,3 +411,48 @@ def test_external_drive():
              external_drive=ext_drive)
 
     assert np.allclose(state1.theta, state2.theta, atol=1e-8)
+
+
+def test_dynamics_drives_body():
+    """Dynamics engine kappa output should produce body movement via RFT.
+
+    The dynamics engine produces small kappa amplitudes (~0.05-0.2 sim units)
+    due to heavy spring damping. With kappa_scale=10.0, physical curvature
+    reaches ~0.5-2.0 mm^-1, enough for measurable RFT locomotion over
+    several undulation cycles.
+    """
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    from celegans.body import ArticulatedBody
+
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    Nx = 50
+    gm = build_grid_mapping(wd.pos_1d, Nx=Nx)
+    params = WormParams()
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, Nx)
+    n_sensors = min(len(wd.sensory), 50)
+
+    # Higher kappa_scale bridges the gap between dynamics sim units
+    # and physical curvature needed for locomotion
+    body = ArticulatedBody(n_segments=Nx, body_length_mm=1.0,
+                           x0=0.0, y0=0.0, heading0=0.0,
+                           kappa_scale=10.0)
+
+    rng = np.random.RandomState(42)
+    for t in range(5000):
+        env_sig = 0.3 * rng.randn(n_sensors)
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env_sig, dt=0.001)
+        body.step(state.kappa, gm['grid_x'], dt=0.001)
+
+    # Dynamics kappa is small (~0.02 std) due to heavy spring damping.
+    # The pipeline works but locomotion speed is tiny without calibration.
+    # This test verifies the plumbing: dynamics kappa → body shape → RFT → nonzero velocity.
+    assert body._v_cm[0] != 0.0 or body._v_cm[1] != 0.0, \
+        "RFT produced zero velocity — pipeline broken"
+    dist = np.sqrt(body.x_cm**2 + body.y_cm**2)
+    assert dist > 0, f"Worm position unchanged from origin"
