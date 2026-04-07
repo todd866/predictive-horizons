@@ -283,3 +283,51 @@ def test_body_anisotropy_matters():
     iso_dist = np.sqrt(body_iso.x_cm**2 + body_iso.y_cm**2)
     aniso_dist = np.sqrt(body_aniso.x_cm**2 + body_aniso.y_cm**2)
     assert aniso_dist > 10 * iso_dist
+
+
+def test_odor_circuit_neuron_lookup():
+    from celegans.data import load_worm_data
+    from celegans.sensory import OdorCircuit
+    wd = load_worm_data(DATA_DIR)
+    circuit = OdorCircuit(wd.neuron_idx, wd.N)
+    assert circuit.awcl == 76
+    assert circuit.awcr == 77
+    assert circuit.awal == 72
+    assert circuit.awar == 73
+
+
+def test_odor_circuit_increasing_concentration():
+    from celegans.sensory import OdorCircuit
+    idx = {'AWCL': 0, 'AWCR': 1, 'AWAL': 2, 'AWAR': 3}
+    circuit = OdorCircuit(idx, N=4)
+    dt = 0.001
+    for c in [0.1, 0.2, 0.3, 0.4, 0.5]:
+        drive = circuit.transduce(c, c, dt)
+    assert drive[2] > 0
+    assert drive[3] > 0
+    assert drive[0] <= 0
+    assert drive[1] <= 0
+
+
+def test_odor_circuit_decreasing_concentration():
+    from celegans.sensory import OdorCircuit
+    idx = {'AWCL': 0, 'AWCR': 1, 'AWAL': 2, 'AWAR': 3}
+    circuit = OdorCircuit(idx, N=4)
+    dt = 0.001
+    for c in [0.5, 0.5, 0.5, 0.5, 0.5]:
+        circuit.transduce(c, c, dt)
+    for c in [0.4, 0.3, 0.2, 0.1]:
+        drive = circuit.transduce(c, c, dt)
+    assert drive[0] > 0
+    assert drive[1] > 0
+
+
+def test_odor_circuit_bilateral_asymmetry():
+    from celegans.sensory import OdorCircuit
+    idx = {'AWCL': 0, 'AWCR': 1, 'AWAL': 2, 'AWAR': 3}
+    circuit = OdorCircuit(idx, N=4)
+    dt = 0.001
+    for _ in range(10):
+        circuit.transduce(0.5, 0.5, dt)
+    drive = circuit.transduce(0.6, 0.4, dt)
+    assert drive[2] > drive[3]
