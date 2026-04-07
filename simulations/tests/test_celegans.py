@@ -221,3 +221,65 @@ def test_body_bilateral_points():
     assert ly > hy
     assert ry < hy
     assert abs(ly - hy - 0.05) < 1e-10
+
+
+def test_body_no_shape_change_no_movement():
+    """Static body shape should produce zero velocity."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                           x0=0.0, y0=0.0, heading0=0.0)
+    kappa = np.zeros(50)
+    grid_x = np.linspace(0, 1, 50)
+    body.step(kappa, grid_x, dt=0.001)
+    x0, y0_pos = body.x_cm, body.y_cm
+    body.step(kappa, grid_x, dt=0.001)
+    assert abs(body.x_cm - x0) < 1e-10
+    assert abs(body.y_cm - y0_pos) < 1e-10
+
+
+def test_body_traveling_wave_produces_forward_motion():
+    """A traveling curvature wave should propel the worm forward."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                           x0=0.0, y0=0.0, heading0=0.0,
+                           C_t=1.0, C_n=1.5, kappa_scale=1.0)
+    grid_x = np.linspace(0, 1, 50)
+    dt = 0.001
+    freq = 1.0
+    wavelength = 1.5
+    amplitude = 3.0
+
+    for i in range(2000):
+        t = i * dt
+        s = np.linspace(0, 1, 50)
+        kappa = amplitude * np.sin(2 * np.pi * (s * body.L / wavelength - freq * t))
+        body.step(kappa, grid_x, dt)
+
+    assert body.x_cm > 0.05
+
+
+def test_body_anisotropy_matters():
+    """With C_n = C_t (isotropic drag), traveling wave produces no net motion."""
+    from celegans.body import ArticulatedBody
+    body_iso = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                               x0=0.0, y0=0.0, heading0=0.0,
+                               C_t=1.0, C_n=1.0, kappa_scale=1.0)
+    body_aniso = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                                 x0=0.0, y0=0.0, heading0=0.0,
+                                 C_t=1.0, C_n=1.5, kappa_scale=1.0)
+    grid_x = np.linspace(0, 1, 50)
+    dt = 0.001
+    freq = 1.0
+    wavelength = 1.5
+    amplitude = 3.0
+
+    for i in range(2000):
+        t = i * dt
+        s = np.linspace(0, 1, 50)
+        kappa = amplitude * np.sin(2 * np.pi * (s * 1.0 / wavelength - freq * t))
+        body_iso.step(kappa, grid_x, dt)
+        body_aniso.step(kappa, grid_x, dt)
+
+    iso_dist = np.sqrt(body_iso.x_cm**2 + body_iso.y_cm**2)
+    aniso_dist = np.sqrt(body_aniso.x_cm**2 + body_aniso.y_cm**2)
+    assert aniso_dist > 10 * iso_dist
