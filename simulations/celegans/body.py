@@ -46,7 +46,7 @@ class ArticulatedBody:
         self.kappa_scale = kappa_scale
         self.bilateral_offset = bilateral_offset
 
-        self.seg_angles = np.full(n_segments, heading0)
+        self.seg_angles = np.full(n_segments, float(heading0))
         self._positions = None
         self.prev_positions = None
 
