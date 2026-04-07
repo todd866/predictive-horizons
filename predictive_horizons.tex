@@ -176,6 +176,10 @@ The system appears anticipatory to any observer limited to discrete readouts whe
 
 Two results from dynamical systems theory support the framework. First, Takens' embedding theorem \cite{takens1981}: if $\Deff \geq 2d + 1$ relative to environmental attractor dimension $d$, the coupling interface supports a faithful map $\Phi$ from environmental to internal dynamics. Second, Voss \cite{voss2000} showed that delayed coupling can produce \textit{anticipatory synchronization}---the response literally leads the driver---providing a concrete existence proof that synchronization-based prediction is dynamically possible.
 
+\medskip
+
+The sync-measurement asymmetry has a spectral interpretation that connects to the nonergodic defence framework developed in Section~\ref{sec:spectral}. The environment presents oscillatory modes across many timescales. The synchronization bandwidth of a coupling channel determines which modes it can track: a fast channel ($\tsync$ small) tracks fast modes; a slow channel ($\tsync$ large but still $< \tenv$) tracks slow modes. The total \textit{spectral bandwidth} of the organism is the union of modes tracked across all coupling channels. The measurement bottleneck ($\tmeas$) then determines how much of this tracked information can be committed to discrete behavioral output. The organism's internal state contains more environmental information than any discrete readout can verify---this is the observational gap (Section~\ref{sec:gap}).
+
 
 %% ═══════════════════════════════════════════════════════════════════
 \section{Synchronization Hierarchy}
@@ -264,12 +268,14 @@ Cortex & variable & $\sim$hr--yr & $\sim$s & variable & Selective \\
 
 A single organism deploys all three levels simultaneously. A human navigating a crowded room passively synchronizes with ambient light and sound, actively modulates gain on a conversation partner's voice, and selectively allocates dimensional resources across social targets. The total predictive capacity is the integral across all levels.
 
+The hierarchy maps onto spectral coverage. Passive synchronization tracks fast environmental modes---the band set by coupling physics. Active synchronization extends to medium modes by modulating gain. Selective synchronization manages which slow modes to track, dynamically reallocating coupling resources as the environment changes. Each level adds a spectral band, and each band costs metabolic energy to maintain. The organism's total spectral bandwidth---the range of environmental timescales it can track simultaneously---is determined by how many levels it can sustain. In \textit{C.~elegans}, the three coupling layers (Section~\ref{sec:trilayer}) map roughly onto these three levels: the connectome provides passive routing of fast signals, the ephaptic field enables active spatial coordination at medium timescales, and the neuropeptide network manages slow behavioral state.
+
 
 %% ═══════════════════════════════════════════════════════════════════
 \section{The \textit{C.\ elegans} Test}
 \label{sec:celegans}
 
-The synchronization framework makes a specific, testable prediction: if the connectome is a low-dimensional projection of a high-dimensional system, then connectome-only simulations should carry environmental information (mutual information should be preserved) but should fail at coordination (motor output should be incoherent). Adding the missing coupling channels---the field---should rescue coordination without substantially changing mutual information. And this rescue should depend on criticality: it should require the system to operate near the synchronization phase transition.
+The synchronization framework makes a specific, testable prediction: if the connectome is a low-dimensional projection of a high-dimensional system, then connectome-only simulations should carry environmental information (mutual information should be preserved) but should fail at coordination (motor output should be incoherent). Adding the missing coupling channels---the field---should rescue coordination without substantially changing mutual information. We test this prediction first with fixed-coupling models (Sections~\ref{sec:three_models}--\ref{sec:interpretation}), then extend to a multi-layer architecture with real neuropeptide data (Section~\ref{sec:trilayer}), a dynamical coherence field (Section~\ref{sec:coherence_field}), and finally a nonergodic defence model that places the trilayer system in a multi-scale environment under metabolic constraint (Section~\ref{sec:spectral}).
 
 \subsection{Three models, one connectome}
 \label{sec:three_models}
@@ -505,6 +511,8 @@ The result (Figure~\ref{fig:gap}) is stark. The full system carries ${\sim}14$ n
 This has implications for how we account for thermodynamic order in biology. Synchronization creates distributed correlations across many coupled degrees of freedom that coarse-grained observation necessarily destroys \cite{todd2025falsifiability}. When the system later converts those hidden correlations into ordered behavior, the observer experiences this as order appearing without a corresponding information source. There is no second-law violation---the correlations were acquired through coupling, stored in the synchronized manifold, and spent at the behavioral output. But the observer's entropy bookkeeping is incomplete because its measurement resolution is lower than the system's internal dimensionality ($D_{\mathrm{observer}} \ll \Deff$).
 
 The connectome is exactly such a low-dimensional observer. It captures the sparse, directed connections that electron microscopy can resolve. It does not capture the continuous, spatially graded, temporally structured field dynamics that the coupling physics produces. The ``mystery'' of how 302 neurons generate complex adaptive behavior dissolves when the measurement instrument is recognized as lossy: the system has far more coupling channels than the connectome records.
+
+In the spectral framework of Section~\ref{sec:spectral}, the observational gap has a concrete interpretation: it is the difference in spectral bandwidth between the organism's full coupling architecture and the connectome alone. The hidden information---the shaded region in Figure~\ref{fig:gap}---is precisely the medium and slow environmental modes that the ephaptic field and neuropeptide network track but the connectome cannot. A neuroscientist recording from \textit{C.~elegans} through calcium imaging and connectome analysis observes the fast synaptic dynamics but misses the slow neuropeptide landscape that determines behavioral state. The gap is not an artifact of measurement noise; it is a structural consequence of observing a multi-layer system through a single layer.
 
 
 %% ═══════════════════════════════════════════════════════════════════
