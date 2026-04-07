@@ -283,6 +283,34 @@ class ArticulatedBody:
         """Return angular velocity (rad/s)."""
         return self._omega
 
+    def reverse(self, turn_angle):
+        """Execute a pirouette reversal.
+
+        Rotates the entire body by ``turn_angle`` (typically near pi).
+
+        Parameters
+        ----------
+        turn_angle : float
+            Total heading change in radians.
+        """
+        self.heading += turn_angle
+        self.seg_angles += turn_angle
+        self.segment_positions()
+
+    def apply_torque(self, torque, dt):
+        """Apply external heading torque (e.g. weathervane bias).
+
+        Parameters
+        ----------
+        torque : float
+            Angular velocity in rad/s.
+        dt : float
+            Timestep in seconds.
+        """
+        delta = torque * dt
+        self.heading += delta
+        self.seg_angles += delta
+
     def enforce_bounds(self, arena):
         """If worm CM is outside arena, push back inside and flip heading."""
         r2 = self.x_cm**2 + self.y_cm**2

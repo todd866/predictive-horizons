@@ -198,7 +198,8 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
          env_signal, dt,
          use_eph=True, use_npp=True, use_phi=True, use_body=True,
          budget_scale=1.0,
-         external_drive=None):
+         external_drive=None,
+         frustration_matrix=None):
     """Advance the simulation by one time step.
 
     This is the hot loop extracted from celegans_trilayer.py lines 375-471,
@@ -237,6 +238,10 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         Enable body mechanics.
     budget_scale : float in [0, 1]
         Metabolic budget multiplier on all coupling strengths.
+    frustration_matrix : ndarray, shape (N, N), optional
+        Sakaguchi-Kuramoto phase frustration offsets for gap junctions.
+        Entry [i,j] is subtracted from (theta_i - theta_j) in gap coupling.
+        Use ``build_frustration_matrix`` to construct.
 
     Returns
     -------
@@ -272,13 +277,18 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         drive[si] = p.K_drive * env_signal[:len(si)]
 
     # ── 3. Phase differences (vectorised NxN) ─────────────────────
-    sin_diff = np.sin(theta[:, None] - theta[None, :])
+    phase_diff = theta[:, None] - theta[None, :]
+    sin_diff = np.sin(phase_diff)
 
     # ── 4. Layer 1: Connectome coupling (chemical + gap w/ depression)
     gap_eff = state.u_gap * W_gap_norm
+    if frustration_matrix is not None:
+        sin_diff_gap = np.sin(phase_diff - frustration_matrix)
+    else:
+        sin_diff_gap = sin_diff
     conn_coupling = budget_scale * (
         p.K_chem * np.sum(W_chem_norm * sin_diff, axis=0)
-        + p.K_gap * np.sum(gap_eff * sin_diff, axis=0)
+        + p.K_gap * np.sum(gap_eff * sin_diff_gap, axis=0)
     )
 
     # ── 5. Layer 2: Ephaptic coupling (gated by phi, w/ depression)

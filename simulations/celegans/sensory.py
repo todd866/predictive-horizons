@@ -38,6 +38,7 @@ class OdorCircuit:
         self.awa_gain = awa_gain
         self.tau_smooth = tau_smooth
         self.C_smooth = None
+        self.last_dCdt = 0.0
 
     def transduce(self, C_left, C_right, dt):
         """Convert bilateral head concentration to per-neuron drive.
@@ -65,6 +66,7 @@ class OdorCircuit:
             new_smooth = self.C_smooth + alpha * (C_mean - self.C_smooth)
             dCdt = (new_smooth - self.C_smooth) / dt
             self.C_smooth = new_smooth
+        self.last_dCdt = dCdt
 
         awc_drive = -self.awc_gain * dCdt
         awa_drive_left = self.awa_gain * C_left

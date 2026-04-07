@@ -4,19 +4,14 @@ Chemotaxis simulation: C. elegans navigating an odor gradient.
 
 Runs 4 model configurations x N_headings x N_seeds on a reduced-distance
 chemotaxis assay. Compares navigation performance across coupling
-architectures using directional proprioception on the axial locomotor chain.
+architectures using:
+  1. Sakaguchi-Kuramoto frustration on motor gap junctions (traveling wave)
+  2. Pirouette navigation state machine (reversal modulation by dC/dt)
+  3. Weathervane heading bias (bilateral SMD asymmetry)
 
 Locomotor scaffold:
   - Directional proprio on VB/DB/VA/DA (body-wall locomotor chain)
-  - Cancels built-in local proprio on those neurons, replaces with
-    anterior-shifted proprio through external_drive
   - C_n = 5.0 (agar surface anisotropy)
-  - No frequency gradient (tested, does not improve propagation)
-
-Limitations:
-  - The model produces locally correlated undulation, not a true
-    head-to-tail traveling wave (confirmed by propagation diagnostics)
-  - Behavioral differences emerge in a sub-wave locomotor regime
 
 Usage:
     python3 openworm/celegans_chemotaxis.py [--quick]
@@ -35,7 +30,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from celegans import (
     load_worm_data, build_coupling_matrices, build_grid_mapping,
     WormState, WormParams, assign_frequencies, step,
-    MetabolicBudget,
+    MetabolicBudget, build_frustration_matrix,
+    NavigationState, WeathervaneCircuit, reversal_turn_angle,
 )
 from celegans.arena import Arena
 from celegans.body import ArticulatedBody
@@ -64,6 +60,17 @@ C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 # ── Directional proprioception ────────────────────────────────────
 PROPRIO_GAIN = 1.5         # anterior-shifted proprioceptive gain
 PROPRIO_DELTA_S = 0.08     # anterior offset in body-lengths
+
+# ── Sakaguchi-Kuramoto frustration ────────────────────────────────
+FRUSTRATION_ALPHA = 1.5    # rad per body-length (phase gradient target)
+
+# ── Navigation parameters ─────────────────────────────────────────
+NAV_BASE_REV_RATE = 2.0 / 60   # 2 reversals/min baseline
+NAV_SENSORY_GAIN = 8.0         # exponential gain on dC/dt
+NAV_TAU_DCDT = 3.0             # dC/dt smoothing timescale (s)
+NAV_MIN_STATE_DUR = 1.0        # min dwell in each state (s)
+NAV_MEAN_BACK_DUR = 2.0        # mean backward duration (s)
+WEATHERVANE_GAIN = 0.5          # heading torque per activity diff (rad/s)
 
 # ── Model configurations ──────────────────────────────────────────
 MODELS = [
@@ -113,7 +120,7 @@ def wave_diagnostics(state, wd):
 
 
 def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
-    """Run one chemotaxis simulation with directional proprioception."""
+    """Run one chemotaxis simulation with navigation circuits."""
     wd = load_worm_data(DATA_DIR)
     cm = build_coupling_matrices(wd)
     gm = build_grid_mapping(wd.pos_1d, Nx=NX)
@@ -128,6 +135,27 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         np.array(wd.VB), np.array(wd.DB),
         np.array(wd.VA), np.array(wd.DA),
     ])
+
+    # Sakaguchi-Kuramoto frustration matrix (motor gap junctions only)
+    frust_matrix = build_frustration_matrix(
+        wd.pos_1d, wd.motor, wd.W_gap, alpha=FRUSTRATION_ALPHA)
+
+    # Navigation circuits
+    nav = NavigationState(
+        base_rev_rate=NAV_BASE_REV_RATE,
+        sensory_gain=NAV_SENSORY_GAIN,
+        tau_dCdt=NAV_TAU_DCDT,
+        min_state_duration=NAV_MIN_STATE_DUR,
+        mean_back_duration=NAV_MEAN_BACK_DUR,
+        seed=seed + 10000,  # decouple from dynamics RNG
+    )
+    weathervane = WeathervaneCircuit(gain=WEATHERVANE_GAIN)
+
+    # Neuron indices for activity readout
+    aval_idx = wd.neuron_idx.get('AVAL')
+    avar_idx = wd.neuron_idx.get('AVAR')
+    smdvl_idx = wd.neuron_idx.get('SMDVL')
+    smdvr_idx = wd.neuron_idx.get('SMDVR')
 
     arena = Arena(
         radius_mm=PLATE_RADIUS,
@@ -146,11 +174,11 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
     n_steps = int(t_total / DT)
     record_every = max(1, int(0.01 / DT))  # 100 Hz recording
     wave_samples = []
+    n_reversals = 0
 
     t0 = time.time()
     for i in range(n_steps):
         # ── Directional proprioception on locomotor chain ─────────
-        # Cancel built-in local proprio, add anterior-shifted proprio
         ext_drive = np.zeros(wd.N)
         kappa_local = np.interp(
             wd.pos_1d[loco_chain], gm['grid_x'], state.kappa)
@@ -169,12 +197,32 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         sensory_drive = circuit.transduce(C_left, C_right, DT)
         ext_drive += sensory_drive
 
-        # ── Neural dynamics ───────────────────────────────────────
+        # ── Neural dynamics (with frustration) ────────────────────
         diag = step(state, params, omegas, cm, gm,
                     wd.sensory, wd.motor, n_sensors, dummy_env, DT,
                     use_eph=use_eph, use_npp=use_npp,
                     budget_scale=budget.budget_scale,
-                    external_drive=ext_drive)
+                    external_drive=ext_drive,
+                    frustration_matrix=frust_matrix)
+
+        # ── Read circuit neuron activity ──────────────────────────
+        activity = 0.5 + 0.5 * np.cos(state.theta)
+        ava_act = 0.5 * (activity[aval_idx] + activity[avar_idx])
+        smdl_act = activity[smdvl_idx] if smdvl_idx is not None else 0.5
+        smdr_act = activity[smdvr_idx] if smdvr_idx is not None else 0.5
+
+        # ── Navigation state machine ─────────────────────────────
+        nav_state, did_reverse = nav.step(ava_act, circuit.last_dCdt, DT)
+
+        if did_reverse:
+            turn = reversal_turn_angle(nav.dCdt_smooth, nav.rng)
+            body.reverse(turn)
+            n_reversals += 1
+
+        # ── Weathervane (forward locomotion only) ─────────────────
+        if nav_state == NavigationState.FORWARD:
+            torque = weathervane.heading_torque(smdl_act, smdr_act)
+            body.apply_torque(torque, DT)
 
         # ── Body + arena + budget ─────────────────────────────────
         body.step(state.kappa, gm['grid_x'], DT)
@@ -214,7 +262,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         'seed': seed,
         'chemotaxis_index': ci,
         'path_efficiency': pe,
-        'reversal_rate': rr,
+        'reversal_rate': float(n_reversals / (t_total / 60)),
         'reversal_gradient_fraction': rtg,
         'mean_bearing': float(bearings.mean()) if len(bearings) > 0 else 0.0,
         'mean_speed': float(np.abs(speeds).mean()) if len(speeds) > 0 else 0.0,
@@ -222,6 +270,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         'final_y': body.y_cm,
         'final_budget': budget.budget_scale,
         'wall_time_s': wall_time,
+        'n_reversals': n_reversals,
         **mean_wave,
     }
 
@@ -248,6 +297,9 @@ def main():
     print(f"Arena: food at ({FOOD_X},{FOOD_Y}), start at ({START_X},{START_Y}), "
           f"separation={np.sqrt((FOOD_X-START_X)**2+(FOOD_Y-START_Y)**2):.0f}mm")
     print(f"Proprio: gain={PROPRIO_GAIN}, delta_s={PROPRIO_DELTA_S}, C_n={C_N_AGAR}")
+    print(f"Frustration: alpha={FRUSTRATION_ALPHA}")
+    print(f"Navigation: rev_rate={NAV_BASE_REV_RATE:.3f}/s, "
+          f"sensory_gain={NAV_SENSORY_GAIN}, weathervane={WEATHERVANE_GAIN}")
 
     results = []
     for model_name, use_eph, use_npp in MODELS:
@@ -264,6 +316,7 @@ def main():
                                     heading, seed, t_total)
                 print(f"CI={result['chemotaxis_index']:+.4f} "
                       f"v={result['mean_speed']:.5f} "
+                      f"rev={result['n_reversals']} "
                       f"κAC={result['kappa_autocorr']:.3f} "
                       f"({result['wall_time_s']:.0f}s)")
                 results.append(result)
@@ -278,7 +331,7 @@ def main():
 
     # ── Summary table ─────────────────────────────────────────────
     print(f"\n{'Model':<18} {'CI':>7} {'Speed':>9} {'κ AC':>7} "
-          f"{'Resid':>7} {'RevRate':>8} {'Budget':>7}")
+          f"{'Resid':>7} {'Rev/min':>8} {'Budget':>7}")
     print('-' * 70)
     for model_name, _, _ in MODELS:
         mr = [r for r in results if r['model'] == model_name]

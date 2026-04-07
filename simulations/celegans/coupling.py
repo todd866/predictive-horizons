@@ -139,3 +139,39 @@ def build_grid_mapping(pos_1d, Nx, sigma_sp=0.08):
         'n_frac': n_frac,
         'dx': dx,
     }
+
+
+def build_frustration_matrix(pos_1d, motor_indices, W_gap, alpha=1.0):
+    """Build Sakaguchi-Kuramoto frustration matrix for motor gap junctions.
+
+    Returns an (N, N) matrix where entry [i, j] = alpha * (pos_j - pos_i)
+    for motor-motor pairs connected by gap junctions, zero elsewhere.
+
+    When used in coupling: sin(theta_i - theta_j - frustration[i,j]),
+    this creates a preferred head-leads-tail phase gradient in the
+    motor neuron chain, enabling traveling wave propagation.
+
+    Parameters
+    ----------
+    pos_1d : ndarray, shape (N,)
+        Body-axis position of each neuron in [0, 1].
+    motor_indices : list of int
+        Indices of motor neurons (VA, VB, DA, DB).
+    W_gap : ndarray, shape (N, N)
+        Raw gap junction weight matrix.
+    alpha : float
+        Frustration strength (radians per body-length of separation).
+
+    Returns
+    -------
+    frustration : ndarray, shape (N, N)
+        Frustration offset matrix.
+    """
+    N = len(pos_1d)
+    motor_mask = np.zeros(N, dtype=bool)
+    motor_mask[motor_indices] = True
+    mm = motor_mask[:, None] & motor_mask[None, :]
+    gap_exists = W_gap > 0
+    mask = mm & gap_exists
+    pos_offset = pos_1d[None, :] - pos_1d[:, None]
+    return np.where(mask, alpha * pos_offset, 0.0)

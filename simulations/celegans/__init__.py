@@ -13,3 +13,5 @@ from .arena import Arena
 from .body import ArticulatedBody
 from .sensory import OdorCircuit
 from .behavior import TrajectoryRecorder
+from .navigation import NavigationState, WeathervaneCircuit, reversal_turn_angle
+from .coupling import build_frustration_matrix

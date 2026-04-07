@@ -413,6 +413,155 @@ def test_external_drive():
     assert np.allclose(state1.theta, state2.theta, atol=1e-8)
 
 
+def test_frustration_matrix_shape():
+    """build_frustration_matrix produces correct shape and motor-only entries."""
+    from celegans.data import load_worm_data
+    from celegans.coupling import build_frustration_matrix
+    wd = load_worm_data(DATA_DIR)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=1.0)
+    assert frust.shape == (448, 448)
+    # Non-motor entries should be zero
+    non_motor = [i for i in range(448) if i not in wd.motor]
+    assert np.allclose(frust[non_motor, :], 0.0)
+    assert np.allclose(frust[:, non_motor], 0.0)
+    # Should have some nonzero entries where motor gap junctions exist
+    assert np.abs(frust).sum() > 0
+    # Anti-symmetric: frust[i,j] = -frust[j,i]
+    assert np.allclose(frust, -frust.T, atol=1e-10)
+
+
+def test_frustration_zero_alpha():
+    """alpha=0 should produce zero frustration matrix."""
+    from celegans.data import load_worm_data
+    from celegans.coupling import build_frustration_matrix
+    wd = load_worm_data(DATA_DIR)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=0.0)
+    assert np.allclose(frust, 0.0)
+
+
+def test_dynamics_with_frustration():
+    """step() with frustration_matrix should run without error."""
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+        build_frustration_matrix,
+    )
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams()
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, 50, seed=42)
+    n_sensors = min(len(wd.sensory), 50)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=1.0)
+
+    env = np.zeros(n_sensors)
+    for _ in range(50):
+        diag = step(state, params, omegas, cm, gm,
+                    wd.sensory, wd.motor, n_sensors, env, dt=0.001,
+                    frustration_matrix=frust)
+    assert diag['order_r'] > 0
+
+
+def test_navigation_state_forward_default():
+    """NavigationState starts in FORWARD state."""
+    from celegans.navigation import NavigationState
+    nav = NavigationState(seed=42)
+    assert nav.state == NavigationState.FORWARD
+    # With zero dCdt and zero AVA activity, should mostly stay forward
+    n_reversals = 0
+    for _ in range(1000):
+        _, did_rev = nav.step(0.0, 0.0, dt=0.01)
+        if did_rev:
+            n_reversals += 1
+    # Base rate 2/min = 0.033/s, over 10s expect ~0.33 reversals
+    assert n_reversals < 5
+
+
+def test_navigation_more_reversals_down_gradient():
+    """Negative dCdt should produce more reversals than positive."""
+    from celegans.navigation import NavigationState
+
+    # Stronger signal, longer run for statistical separation
+    # Down-gradient: negative dCdt
+    nav_down = NavigationState(seed=42, sensory_gain=10.0)
+    revs_down = 0
+    for _ in range(50000):
+        _, did_rev = nav_down.step(0.5, -0.05, dt=0.01)
+        if did_rev:
+            revs_down += 1
+
+    # Up-gradient: positive dCdt
+    nav_up = NavigationState(seed=43, sensory_gain=10.0)
+    revs_up = 0
+    for _ in range(50000):
+        _, did_rev = nav_up.step(0.5, 0.05, dt=0.01)
+        if did_rev:
+            revs_up += 1
+
+    assert revs_down > revs_up, f"down={revs_down}, up={revs_up}"
+
+
+def test_reversal_turn_angle():
+    """Turn angles should be centered near pi."""
+    from celegans.navigation import reversal_turn_angle
+    rng = np.random.RandomState(42)
+    angles = [reversal_turn_angle(0.0, rng) for _ in range(1000)]
+    mean_angle = np.mean(angles)
+    assert abs(mean_angle - np.pi) < 0.2
+
+
+def test_weathervane_symmetric():
+    """Equal bilateral activity should produce zero torque."""
+    from celegans.navigation import WeathervaneCircuit
+    wv = WeathervaneCircuit(gain=0.5)
+    torque = wv.heading_torque(0.5, 0.5)
+    assert abs(torque) < 1e-10
+
+
+def test_weathervane_asymmetric():
+    """Higher left activity should produce positive (CCW) torque."""
+    from celegans.navigation import WeathervaneCircuit
+    wv = WeathervaneCircuit(gain=0.5)
+    torque = wv.heading_torque(0.8, 0.2)
+    assert torque > 0
+    torque_rev = wv.heading_torque(0.2, 0.8)
+    assert torque_rev < 0
+
+
+def test_body_reverse():
+    """Body reverse should flip heading by approximately pi."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                           x0=0.0, y0=0.0, heading0=0.0)
+    kappa = np.zeros(50)
+    grid_x = np.linspace(0, 1, 50)
+    body.set_curvature(kappa, grid_x)
+    body.segment_positions()
+    body.reverse(np.pi)
+    assert abs(body.heading - np.pi) < 1e-10
+
+
+def test_body_apply_torque():
+    """apply_torque should change heading proportionally."""
+    from celegans.body import ArticulatedBody
+    body = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                           x0=0.0, y0=0.0, heading0=0.0)
+    body.apply_torque(1.0, dt=0.1)  # 1 rad/s * 0.1s = 0.1 rad
+    assert abs(body.heading - 0.1) < 1e-10
+
+
+def test_odor_circuit_exposes_dCdt():
+    """OdorCircuit.last_dCdt should track concentration change rate."""
+    from celegans.sensory import OdorCircuit
+    idx = {'AWCL': 0, 'AWCR': 1, 'AWAL': 2, 'AWAR': 3}
+    circuit = OdorCircuit(idx, N=4)
+    circuit.transduce(0.5, 0.5, dt=0.001)
+    assert circuit.last_dCdt == 0.0
+    circuit.transduce(0.6, 0.6, dt=0.001)
+    assert circuit.last_dCdt > 0
+
+
 def test_dynamics_drives_body():
     """Dynamics engine kappa output should produce body movement via RFT.
 
