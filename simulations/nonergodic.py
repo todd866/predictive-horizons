@@ -66,9 +66,12 @@ subsample = max(1, int(0.02 / dt))        # store every 20 ms
 K_env = args.K                             # number of environment modes
 
 BUDGET_PARAMS = dict(
-    R_max=100.0, E_in=5.0, cost_coupling=2.0,
+    R_max=100.0, E_in=2.0, cost_coupling=2.0,
     cost_coherence=1.0, cost_dimensional=0.2,
 )
+# E_in=2.0 sits between connectome-only expenditure (~0.9/s) and
+# trilayer expenditure (~3.6/s), so the connectome coasts while
+# the trilayer must manage its budget.
 
 # ── Figure styling ────────────────────────────────────────────────────
 plt.rcParams.update({
