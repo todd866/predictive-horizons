@@ -887,29 +887,38 @@ def test_dv_traveling_wave():
             kappa_ts[p].append(state.kappa[p])
 
     def _peak_lag(ts1, ts2):
+        """Return (lag_in_steps, normalized_correlation_at_peak)."""
         a = np.array(ts1) - np.mean(ts1)
         b = np.array(ts2) - np.mean(ts2)
         if a.std() < 0.01 or b.std() < 0.01:
-            return 0
+            return 0, 0.0
         xcorr = np.correlate(a, b, mode='full')
+        norm = np.sqrt(np.sum(a**2) * np.sum(b**2))
+        xcorr_n = xcorr / max(norm, 1e-10)
         lags = np.arange(-len(a) + 1, len(a))
         mask = np.abs(lags) <= 300
-        return lags[mask][np.argmax(xcorr[mask])]
+        peak_idx = np.argmax(xcorr_n[mask])
+        return lags[mask][peak_idx], float(xcorr_n[mask][peak_idx])
 
-    lag_ant_mid = _peak_lag(kappa_ts[probe_ant], kappa_ts[probe_mid])
-    lag_ant_post = _peak_lag(kappa_ts[probe_ant], kappa_ts[probe_post])
+    lag_am, corr_am = _peak_lag(kappa_ts[probe_ant], kappa_ts[probe_mid])
+    lag_ap, corr_ap = _peak_lag(kappa_ts[probe_ant], kappa_ts[probe_post])
 
+    # Minimum correlation strength — rejects noisy/spurious lags
+    assert corr_am > 0.1, (
+        f"Weak ant-mid correlation {corr_am:.3f} at lag={lag_am}")
+    assert corr_ap > 0.1, (
+        f"Weak ant-post correlation {corr_ap:.3f} at lag={lag_ap}")
     # Both lags nonzero
-    assert lag_ant_mid != 0 and lag_ant_post != 0, (
-        f"No propagation: lag(ant,mid)={lag_ant_mid}, lag(ant,post)={lag_ant_post}")
+    assert lag_am != 0 and lag_ap != 0, (
+        f"No propagation: lag(ant,mid)={lag_am}, lag(ant,post)={lag_ap}")
     # Consistent propagation direction
-    assert np.sign(lag_ant_mid) == np.sign(lag_ant_post), (
-        f"Inconsistent direction: lag(ant,mid)={lag_ant_mid}, "
-        f"lag(ant,post)={lag_ant_post}")
+    assert np.sign(lag_am) == np.sign(lag_ap), (
+        f"Inconsistent direction: lag(ant,mid)={lag_am}, "
+        f"lag(ant,post)={lag_ap}")
     # Phase delay increases with distance (traveling wave, not standing)
-    assert abs(lag_ant_post) >= abs(lag_ant_mid), (
+    assert abs(lag_ap) >= abs(lag_am), (
         f"Phase delay doesn't increase with distance: "
-        f"|lag(ant,post)|={abs(lag_ant_post)} < |lag(ant,mid)|={abs(lag_ant_mid)}")
+        f"|lag(ant,post)|={abs(lag_ap)} < |lag(ant,mid)|={abs(lag_am)}")
 
 
 def test_dv_rft_locomotion():

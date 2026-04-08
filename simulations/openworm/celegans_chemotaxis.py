@@ -248,10 +248,15 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL,
 
         # ── Locomotion ────────────────────────────────────────────
         if nav_state == NavigationState.BACKWARD:
-            # Backward: worm stops (pirouette phase); turn applied at resume
-            body.kinematic_step(state.kappa, gm['grid_x'], DT,
-                                speed=0.0, heading_noise_std=0.0,
-                                rng=body_rng)
+            # Pirouette pause: no movement, turn applied at resume.
+            # Embodied: keep neural-driven body posture for sensing.
+            # Kinematic: straight body at zero speed (shape irrelevant).
+            if embodied:
+                body.hold_position(state.kappa, gm['grid_x'])
+            else:
+                body.kinematic_step(state.kappa, gm['grid_x'], DT,
+                                    speed=0.0, heading_noise_std=0.0,
+                                    rng=body_rng)
         elif embodied:
             body.step(state.kappa, gm['grid_x'], DT)
         else:

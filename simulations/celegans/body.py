@@ -334,6 +334,23 @@ class ArticulatedBody:
         self.seg_angles[:] = self.heading  # straight body for simplicity
         self.segment_positions()
 
+    def hold_position(self, kappa_grid, grid_x):
+        """Maintain neural-driven body shape without locomotion.
+
+        Updates curvature and segment positions for sensory sampling
+        but does not move CM or heading.  Sets prev_positions so the
+        next ``step()`` call sees zero deformation velocity.
+
+        Used during backward/pause phases in embodied mode to preserve
+        the articulated body posture (unlike ``kinematic_step`` which
+        straightens the body).
+        """
+        self.set_curvature(kappa_grid, grid_x)
+        self.segment_positions()
+        self.prev_positions = self._positions.copy()
+        self._v_cm = np.zeros(2)
+        self._omega = 0.0
+
     def apply_torque(self, torque, dt):
         """Apply external heading torque (e.g. weathervane bias).
 
