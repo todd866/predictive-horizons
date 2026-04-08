@@ -621,3 +621,62 @@ def test_data_has_vd_dd():
     # VD spans most of body
     assert wd.pos_1d[wd.VD].min() < 0.4
     assert wd.pos_1d[wd.VD].max() > 0.9
+
+
+def test_muscle_opposing_activation():
+    """Dorsal-only drive produces positive kappa; ventral-only produces negative."""
+    from celegans.muscle import MuscleState, muscle_drive
+
+    Nx = 50
+    ms = MuscleState(Nx)
+    grid_x = np.linspace(0, 1, Nx)
+
+    # Simulate: one dorsal neuron at mid-body, fully active
+    dorsal_exc = [(0.5, 1.0)]   # (position, activity)
+    ventral_exc = []
+    dorsal_inh = []
+    ventral_inh = []
+    F_d, F_v = muscle_drive(dorsal_exc, ventral_exc, dorsal_inh, ventral_inh,
+                             grid_x, sigma=0.08)
+    assert F_d.max() > 0.1
+    assert F_v.max() < 0.01
+
+    # Step the muscle filter
+    for _ in range(100):
+        ms.step(F_d, F_v, dt=0.001)
+    kappa = ms.kappa(K_muscle=1.0)
+    assert kappa[Nx // 2] > 0   # dorsal bend = positive
+
+
+def test_muscle_dv_alternation():
+    """When dorsal and ventral alternate spatially, kappa alternates sign."""
+    from celegans.muscle import MuscleState, muscle_drive
+
+    Nx = 50
+    ms = MuscleState(Nx)
+    grid_x = np.linspace(0, 1, Nx)
+
+    # Dorsal active at 0.3, ventral active at 0.7
+    dorsal_exc = [(0.3, 1.0)]
+    ventral_exc = [(0.7, 1.0)]
+    F_d, F_v = muscle_drive(dorsal_exc, ventral_exc, [], [], grid_x, sigma=0.08)
+    for _ in range(200):
+        ms.step(F_d, F_v, dt=0.001)
+    kappa = ms.kappa(K_muscle=1.0)
+    assert kappa[15] > 0    # near 0.3: dorsal bend
+    assert kappa[35] < 0    # near 0.7: ventral bend
+
+
+def test_muscle_inhibition_reduces_activation():
+    """VD inhibition should reduce ventral muscle activation."""
+    from celegans.muscle import muscle_drive
+
+    Nx = 50
+    grid_x = np.linspace(0, 1, Nx)
+
+    # Ventral excitation only
+    _, F_v_no_inh = muscle_drive([], [(0.5, 1.0)], [], [], grid_x, sigma=0.08)
+    # Same ventral + VD inhibition at same position
+    _, F_v_with_inh = muscle_drive([], [(0.5, 1.0)], [], [(0.5, 0.8)],
+                                    grid_x, sigma=0.08)
+    assert F_v_with_inh[Nx // 2] < F_v_no_inh[Nx // 2]
