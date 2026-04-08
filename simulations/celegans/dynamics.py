@@ -105,6 +105,12 @@ class WormParams:
         self.gamma_body = 1.5
         self.K_muscle = 0.8
         self.sigma_body = 0.01
+        self.tau_muscle = 0.05    # muscle activation time constant (50 ms)
+        self.K_muscle_inh = 0.6   # inhibitory gain (VD/DD, relative to excitatory)
+
+        # Proprioception
+        self.proprio_gain = 1.5      # proprioceptive coupling strength
+        self.proprio_delta_s = 0.08  # anterior offset in body-lengths
 
         # Override any defaults with caller-supplied values
         for key, val in kwargs.items():
@@ -144,6 +150,8 @@ class WormState:
         # Body mechanics
         self.kappa = np.zeros(Nx)
         self.kappa_dot = np.zeros(Nx)
+        self.m_dorsal = np.zeros(Nx)   # dorsal muscle activation
+        self.m_ventral = np.zeros(Nx)  # ventral muscle activation
 
         # Synaptic resources (per layer, NxN)
         self.u_gap = np.ones((N, N)) * 0.8
@@ -199,7 +207,9 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
          use_eph=True, use_npp=True, use_phi=True, use_body=True,
          budget_scale=1.0,
          external_drive=None,
-         frustration_matrix=None):
+         frustration_matrix=None,
+         motor_classes=None,
+         pos_1d=None):
     """Advance the simulation by one time step.
 
     This is the hot loop extracted from celegans_trilayer.py lines 375-471,
@@ -242,6 +252,10 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         Sakaguchi-Kuramoto phase frustration offsets for gap junctions.
         Entry [i,j] is subtracted from (theta_i - theta_j) in gap coupling.
         Use ``build_frustration_matrix`` to construct.
+    motor_classes : dict, optional
+        Dict with keys 'VA','VB','DA','DB','VD','DD' mapping to index lists.
+        When provided and ``use_body`` is True, uses dorsal-ventral muscle
+        model instead of the default single-channel body mechanics.
 
     Returns
     -------
@@ -311,12 +325,28 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
     # ── 7. Effective frequency ─────────────────────────────────────
     omega_eff = omegas - p.g_adapt * state.adapt + state.npp_mod
 
-    # ── 8. Proprioception (motor neurons get body curvature feedback)
+    # ── 8. Proprioception ─────────────────────────────────────────
     proprio = np.zeros(N)
     if use_body and len(motor_indices) > 0:
-        kappa_n = interp_field(state.kappa, n_left, n_frac)
-        mi = np.array(motor_indices)
-        proprio[mi] = 0.3 * np.sin(kappa_n[mi] - theta[mi])
+        if pos_1d is not None:
+            # Anterior-delayed: read curvature from position ahead
+            if motor_classes is not None:
+                # Restrict to body-wall motor neurons only
+                bw = []
+                for cls in ('DA', 'DB', 'VA', 'VB', 'VD', 'DD'):
+                    bw.extend(motor_classes[cls])
+                mi = np.array(bw) if bw else np.array([], dtype=int)
+            else:
+                mi = np.array(motor_indices)
+            if len(mi) > 0:
+                anterior_pos = np.clip(pos_1d[mi] - p.proprio_delta_s, 0.0, 1.0)
+                kappa_ant = np.interp(anterior_pos, grid_mapping['grid_x'], state.kappa)
+                proprio[mi] = p.proprio_gain * np.sin(kappa_ant - theta[mi])
+        else:
+            # Legacy: local proprioception
+            mi = np.array(motor_indices)
+            kappa_n = interp_field(state.kappa, n_left, n_frac)
+            proprio[mi] = 0.3 * np.sin(kappa_n[mi] - theta[mi])
 
     # ── 9. Phase update ────────────────────────────────────────────
     dtheta = omega_eff + drive + conn_coupling + eph_coupling + proprio
@@ -365,7 +395,48 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         state.phi = np.clip(state.phi, 0, 3.0)
 
     # ── 13. Body mechanics update ──────────────────────────────────
-    if use_body:
+    if use_body and motor_classes is not None:
+        # ── 13a. Dorsal-ventral muscle model ──────────────────────
+        activity = 0.5 * (1 + np.cos(theta))  # [0, 1]
+
+        F_d = np.zeros(Nx)
+        F_v = np.zeros(Nx)
+
+        # Excitatory: DA/DB -> dorsal, VA/VB -> ventral
+        # (K_muscle applied once at kappa output, not here)
+        for cls in ('DA', 'DB'):
+            idxs = np.array(motor_classes[cls])
+            if len(idxs) > 0:
+                np.add.at(F_d, neuron_body_idx[idxs], activity[idxs])
+        for cls in ('VA', 'VB'):
+            idxs = np.array(motor_classes[cls])
+            if len(idxs) > 0:
+                np.add.at(F_v, neuron_body_idx[idxs], activity[idxs])
+
+        # Inhibitory cross-coupling: DD -> suppress dorsal, VD -> suppress ventral
+        for cls in ('DD',):
+            idxs = np.array(motor_classes[cls])
+            if len(idxs) > 0:
+                np.add.at(F_d, neuron_body_idx[idxs], -p.K_muscle_inh * activity[idxs])
+        for cls in ('VD',):
+            idxs = np.array(motor_classes[cls])
+            if len(idxs) > 0:
+                np.add.at(F_v, neuron_body_idx[idxs], -p.K_muscle_inh * activity[idxs])
+
+        F_d = np.clip(F_d, 0, None)
+        F_v = np.clip(F_v, 0, None)
+
+        # Low-pass muscle filter
+        alpha_m = dt / (p.tau_muscle + dt)
+        state.m_dorsal += alpha_m * (F_d - state.m_dorsal)
+        state.m_ventral += alpha_m * (F_v - state.m_ventral)
+
+        # Curvature from D-V difference
+        state.kappa = p.K_muscle * (state.m_dorsal - state.m_ventral)
+        state.kappa = np.clip(state.kappa, -3, 3)
+
+    elif use_body:
+        # ── 13b. Legacy single-channel body mechanics ─────────────
         F_muscle = np.zeros(Nx)
         if len(motor_indices) > 0:
             mi = np.array(motor_indices)
