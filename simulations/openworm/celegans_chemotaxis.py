@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """
-Kinematic chemotaxis comparison: C. elegans coupling architectures.
+Chemotaxis comparison: C. elegans coupling architectures.
 
 Compares navigation performance across 4 coupling architectures
-(connectome-only, +ephaptic, +neuropeptide, trilayer) using a
-kinematic locomotion scaffold with pirouette navigation.
+(connectome-only, +ephaptic, +neuropeptide, trilayer) using pirouette
+navigation with either kinematic or embodied locomotion.
 
-IMPORTANT: This is a *kinematic* assay, not embodied locomotion.
-  - The worm moves at a fixed speed (CRAWL_SPEED) with heading noise
-  - Body curvature from neural dynamics is computed but does NOT drive
-    locomotion (the Kuramoto model produces standing waves, not traveling)
-  - Navigation comes from reversal modulation: the NavigationState reads
-    dC/dt from the OdorCircuit and AVA activity from the neural dynamics
-    to modulate reversal timing (pirouette strategy)
-  - Architecture differences affect the sensory-to-motor signal
-    transmission, which modulates reversal timing differently
+Two locomotion modes:
+  KINEMATIC (default): Fixed speed + heading noise. Body curvature is
+    computed but does not drive locomotion. Isolates the navigation
+    question from locomotion quality.
 
-This separates the navigation question ("do coupling architectures
-produce different navigation?") from the locomotion question ("can
-the Kuramoto model produce a traveling wave?" — answer: no).
+  EMBODIED (--embodied): Neural dynamics drive body curvature → D-V
+    muscle model → RFT locomotion. Speed is ~0.04 mm/s (vs biological
+    0.15-0.25), so sensory gain is higher to compensate for slower
+    gradient sampling.
+
+In both modes, navigation comes from reversal modulation: the
+NavigationState reads dC/dt from the OdorCircuit and AVA activity
+from the neural dynamics to modulate reversal timing (pirouette).
 
 Usage:
-    python3 openworm/celegans_chemotaxis.py [--quick]
+    python3 openworm/celegans_chemotaxis.py [--quick] [--embodied]
 """
 
 import sys
@@ -69,13 +69,23 @@ C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 CRAWL_SPEED = 0.15         # mm/s (biological: 0.15-0.25)
 HEADING_NOISE = 0.1        # rad/sqrt(s) heading diffusion (lower = straighter runs)
 
+# ── Embodied locomotion ──────────────────────────────────────────
+# D-V muscle model → RFT. Speed ~0.04 mm/s (limited by Kuramoto wave quality).
+EMBODIED_K_MUSCLE = 2.5     # higher than default 0.8 for stronger curvature
+EMBODIED_PROPRIO_GAIN = 3.0 # higher than default 1.5 for better wave propagation
+EMBODIED_PROPRIO_DS = 0.1   # anterior offset in body-lengths
+EMBODIED_KAPPA_SCALE = 150  # higher than kinematic 100 for more physical curvature
+EMBODIED_C_N = 10.0         # higher drag anisotropy for more RFT thrust
+
 # ── Sakaguchi-Kuramoto frustration ────────────────────────────────
 FRUSTRATION_ALPHA = 0.0    # disabled — doesn't improve wave (spatial coherence from proprio)
 
 # ── Navigation parameters ─────────────────────────────────────────
 NAV_BASE_REV_RATE = 2.0 / 60   # 2 reversals/min baseline
-NAV_SENSORY_GAIN = 70.0        # exponential gain on dC/dt
+NAV_SENSORY_GAIN = 70.0        # exponential gain on dC/dt (kinematic)
                                 # gives ~4:1 reversal ratio at model dCdt ≈ 0.01
+NAV_SENSORY_GAIN_EMBODIED = 250.0  # higher for slower embodied speed
+                                    # (~4x slower → dCdt ~4x smaller)
 NAV_TAU_DCDT = 3.0             # dC/dt smoothing timescale (s)
 NAV_MIN_STATE_DUR = 1.0        # min dwell in each state (s)
 NAV_MEAN_BACK_DUR = 2.0        # mean backward duration (s)
@@ -129,12 +139,18 @@ def wave_diagnostics(state, wd):
     }
 
 
-def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
+def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL,
+               embodied=False):
     """Run one chemotaxis simulation with navigation circuits."""
     wd = load_worm_data(DATA_DIR)
     cm = build_coupling_matrices(wd)
     gm = build_grid_mapping(wd.pos_1d, Nx=NX)
-    params = WormParams()
+    if embodied:
+        params = WormParams(K_muscle=EMBODIED_K_MUSCLE,
+                            proprio_gain=EMBODIED_PROPRIO_GAIN,
+                            proprio_delta_s=EMBODIED_PROPRIO_DS)
+    else:
+        params = WormParams()
     omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
     state = WormState(wd.N, NX, seed=seed)
     n_sensors = min(len(wd.sensory), 50)
@@ -154,9 +170,10 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         frust_matrix = None
 
     # Navigation circuits
+    sensory_gain = NAV_SENSORY_GAIN_EMBODIED if embodied else NAV_SENSORY_GAIN
     nav = NavigationState(
         base_rev_rate=NAV_BASE_REV_RATE,
-        sensory_gain=NAV_SENSORY_GAIN,
+        sensory_gain=sensory_gain,
         tau_dCdt=NAV_TAU_DCDT,
         min_state_duration=NAV_MIN_STATE_DUR,
         mean_back_duration=NAV_MEAN_BACK_DUR,
@@ -178,7 +195,8 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
     body = ArticulatedBody(
         n_segments=NX, body_length_mm=1.0,
         x0=START_X, y0=START_Y, heading0=float(heading),
-        kappa_scale=KAPPA_SCALE, C_n=C_N_AGAR,
+        kappa_scale=EMBODIED_KAPPA_SCALE if embodied else KAPPA_SCALE,
+        C_n=EMBODIED_C_N if embodied else C_N_AGAR,
     )
     circuit = OdorCircuit(wd.neuron_idx, wd.N)
     rec = TrajectoryRecorder()
@@ -224,11 +242,13 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
             body.reverse(turn)
             n_reversals += 1
 
-        # ── Kinematic locomotion ──────────────────────────────────
-        # Fixed speed + heading noise; full neural dynamics for readouts
-        body.kinematic_step(state.kappa, gm['grid_x'], DT,
-                            speed=CRAWL_SPEED, heading_noise_std=HEADING_NOISE,
-                            rng=body_rng)
+        # ── Locomotion ────────────────────────────────────────────
+        if embodied:
+            body.step(state.kappa, gm['grid_x'], DT)
+        else:
+            body.kinematic_step(state.kappa, gm['grid_x'], DT,
+                                speed=CRAWL_SPEED, heading_noise_std=HEADING_NOISE,
+                                rng=body_rng)
         body.enforce_bounds(arena)
         budget.update(DT, **diag)
 
@@ -259,6 +279,10 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         mean_wave = {'phase_gradient': 0, 'phase_residual': 0,
                      'kappa_autocorr': 0, 'dominant_wavelength': 0}
 
+    # Displacement-based speed (net displacement / time)
+    displacement = np.sqrt((body.x_cm - START_X)**2 + (body.y_cm - START_Y)**2)
+    disp_speed = displacement / t_total
+
     return {
         'model': model_name,
         'heading': float(heading),
@@ -269,6 +293,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         'reversal_gradient_fraction': rtg,
         'mean_bearing': float(bearings.mean()) if len(bearings) > 0 else 0.0,
         'mean_speed': float(np.abs(speeds).mean()) if len(speeds) > 0 else 0.0,
+        'displacement_speed': float(disp_speed),
         'final_x': body.x_cm,
         'final_y': body.y_cm,
         'final_budget': budget.budget_scale,
@@ -281,8 +306,12 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
 def main():
     parser = argparse.ArgumentParser(description='C. elegans chemotaxis simulation')
     parser.add_argument('--quick', action='store_true',
-                        help='Quick test: 2 headings x 1 seed per model, 60s')
+                        help='Quick test: 4 headings x 5 seeds per model, 120s')
+    parser.add_argument('--embodied', action='store_true',
+                        help='Use embodied RFT locomotion (D-V muscle model)')
     args = parser.parse_args()
+
+    sensory_gain_used = NAV_SENSORY_GAIN_EMBODIED if args.embodied else NAV_SENSORY_GAIN
 
     if args.quick:
         headings = [0.0, np.pi / 2, np.pi, 3 * np.pi / 2]
@@ -297,12 +326,17 @@ def main():
         print(f"Full experiment: {total_runs} runs "
               f"({len(MODELS)} models x {len(headings)} headings x {seeds_per} seeds)")
 
+    mode_str = "EMBODIED (D-V RFT)" if args.embodied else "KINEMATIC"
+    print(f"Locomotion: {mode_str}")
     print(f"Arena: food at ({FOOD_X},{FOOD_Y}), start at ({START_X},{START_Y}), "
           f"separation={np.sqrt((FOOD_X-START_X)**2+(FOOD_Y-START_Y)**2):.0f}mm")
-    print(f"Proprio: via core dynamics (WormParams), C_n={C_N_AGAR}")
-    print(f"Frustration: alpha={FRUSTRATION_ALPHA}")
+    if args.embodied:
+        print(f"D-V params: K_muscle={EMBODIED_K_MUSCLE}, proprio_gain={EMBODIED_PROPRIO_GAIN}, "
+              f"kappa_scale={EMBODIED_KAPPA_SCALE}, C_n={EMBODIED_C_N}")
+    else:
+        print(f"Kinematic: speed={CRAWL_SPEED}mm/s, heading_noise={HEADING_NOISE}")
     print(f"Navigation: rev_rate={NAV_BASE_REV_RATE:.3f}/s, "
-          f"sensory_gain={NAV_SENSORY_GAIN}, weathervane={WEATHERVANE_GAIN}")
+          f"sensory_gain={sensory_gain_used}, weathervane={WEATHERVANE_GAIN}")
 
     results = []
     for model_name, use_eph, use_npp in MODELS:
@@ -316,7 +350,8 @@ def main():
                 print(f"  h={heading:.2f} s={seed} [{idx}/{total}]",
                       end=' ... ', flush=True)
                 result = run_single(model_name, use_eph, use_npp,
-                                    heading, seed, t_total)
+                                    heading, seed, t_total,
+                                    embodied=args.embodied)
                 print(f"CI={result['chemotaxis_index']:+.4f} "
                       f"v={result['mean_speed']:.5f} "
                       f"rev={result['n_reversals']} "
@@ -328,33 +363,43 @@ def main():
     import subprocess
     git_sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
                               capture_output=True, text=True).stdout.strip()
+    loco_mode = 'embodied' if args.embodied else 'kinematic'
+    meta = {
+        'git_sha': git_sha,
+        'dt': DT,
+        't_total': t_total,
+        'n_headings': len(headings),
+        'n_seeds': seeds_per,
+        'n_models': len(MODELS),
+        'total_runs': len(results),
+        'locomotion_mode': loco_mode,
+        'food_x': FOOD_X,
+        'food_y': FOOD_Y,
+        'start_x': START_X,
+        'start_y': START_Y,
+        'food_sigma': FOOD_SIGMA,
+        'sensory_gain': sensory_gain_used,
+        'base_rev_rate': NAV_BASE_REV_RATE,
+        'weathervane_gain': WEATHERVANE_GAIN,
+        'frustration_alpha': FRUSTRATION_ALPHA,
+    }
+    if loco_mode == 'kinematic':
+        meta['crawl_speed_mm_s'] = CRAWL_SPEED
+        meta['heading_noise_rad_sqrt_s'] = HEADING_NOISE
+    else:
+        meta['K_muscle'] = EMBODIED_K_MUSCLE
+        meta['proprio_gain'] = EMBODIED_PROPRIO_GAIN
+        meta['proprio_delta_s'] = EMBODIED_PROPRIO_DS
+        meta['kappa_scale'] = EMBODIED_KAPPA_SCALE
+        meta['C_n'] = EMBODIED_C_N
     output = {
-        'metadata': {
-            'git_sha': git_sha,
-            'dt': DT,
-            't_total': t_total,
-            'n_headings': len(headings),
-            'n_seeds': seeds_per,
-            'n_models': len(MODELS),
-            'total_runs': len(results),
-            'locomotion_mode': 'kinematic',
-            'crawl_speed_mm_s': CRAWL_SPEED,
-            'heading_noise_rad_sqrt_s': HEADING_NOISE,
-            'food_x': FOOD_X,
-            'food_y': FOOD_Y,
-            'start_x': START_X,
-            'start_y': START_Y,
-            'food_sigma': FOOD_SIGMA,
-            'sensory_gain': NAV_SENSORY_GAIN,
-            'base_rev_rate': NAV_BASE_REV_RATE,
-            'weathervane_gain': WEATHERVANE_GAIN,
-            'frustration_alpha': FRUSTRATION_ALPHA,
-        },
+        'metadata': meta,
         'runs': results,
     }
     out_dir = Path(__file__).parent.parent / 'results'
     out_dir.mkdir(exist_ok=True)
-    out_path = out_dir / 'chemotaxis_results.json'
+    suffix = '_embodied' if args.embodied else ''
+    out_path = out_dir / f'chemotaxis_results{suffix}.json'
     with open(out_path, 'w') as f:
         json.dump(output, f, indent=2)
     print(f"\nResults saved to {out_path}")

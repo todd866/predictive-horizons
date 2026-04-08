@@ -682,6 +682,48 @@ def test_muscle_inhibition_reduces_activation():
     assert F_v_with_inh[Nx // 2] < F_v_no_inh[Nx // 2]
 
 
+def test_compute_dv_drive():
+    """compute_dv_drive (point-deposit) produces correct D-V fields.
+
+    This is the function dynamics.py calls — validating it here ensures
+    the tested code IS the live simulation path.
+    """
+    from celegans.muscle import compute_dv_drive
+
+    Nx = 50
+    N = 10
+    activity = np.ones(N) * 0.5
+    neuron_body_idx = np.array([5, 15, 25, 35, 45, 10, 20, 30, 40, 8])
+    motor_classes = {
+        'DA': [0, 1],    # dorsal excitatory at grid 5, 15
+        'DB': [2],        # dorsal excitatory at grid 25
+        'VA': [3, 4],    # ventral excitatory at grid 35, 45
+        'VB': [5],        # ventral excitatory at grid 10
+        'DD': [6],        # dorsal inhibitory at grid 20
+        'VD': [7, 8],    # ventral inhibitory at grid 30, 40
+    }
+
+    F_d, F_v = compute_dv_drive(activity, neuron_body_idx, motor_classes, 0.6, Nx)
+
+    # Dorsal excitatory at grid 5, 15, 25
+    assert F_d[5] == 0.5
+    assert F_d[15] == 0.5
+    assert F_d[25] == 0.5
+    # DD inhibition at grid 20: 0 - 0.6*0.5 = -0.3 -> clipped to 0
+    assert F_d[20] == 0.0
+
+    # Ventral excitatory at grid 35, 45, 10
+    assert F_v[35] == 0.5
+    assert F_v[45] == 0.5
+    assert F_v[10] == 0.5
+    # VD inhibition at grid 30: 0 - 0.6*0.5 = -0.3 -> clipped to 0
+    assert F_v[30] == 0.0
+
+    # All values non-negative
+    assert F_d.min() >= 0
+    assert F_v.min() >= 0
+
+
 def test_dv_body_mechanics():
     """D-V muscle model produces signed curvature from opposing motor classes."""
     from celegans import (
@@ -755,14 +797,13 @@ def test_anterior_delayed_proprio():
 def test_dv_traveling_wave():
     """D-V muscles + anterior-delayed proprio should produce a traveling wave.
 
-    Measured by: (1) kappa has both signs (D-V alternation),
+    Checks:
+    (1) kappa has both signs (D-V alternation),
     (2) meaningful curvature amplitude (kappa_std > 0.1),
-    (3) phase residual < 5.0 (improved from standing-wave baseline ~5.2).
-
-    Note: kappa spatial autocorrelation at lag-1 may be negative because
-    the D-V model creates fine-scale dorsal-ventral alternation. This is
-    correct — the wave structure appears at the motor-neuron scale, not
-    the grid-point scale.
+    (3) phase residual < 5.0 (improved from standing-wave baseline ~5.2),
+    (4) temporal phase propagation — kappa oscillations at head vs mid-body
+        have a nonzero cross-correlation lag (distinguishes traveling from
+        standing wave).
     """
     from celegans import (
         load_worm_data, build_coupling_matrices, build_grid_mapping,
@@ -783,19 +824,20 @@ def test_dv_traveling_wave():
         'VD': wd.VD, 'DD': wd.DD,
     }
 
+    # Transient phase
     for _ in range(2000):
         step(state, params, omegas, cm, gm,
              wd.sensory, wd.motor, n_sensors, env, dt=0.005,
              motor_classes=motor_classes, pos_1d=wd.pos_1d)
 
     k = state.kappa
-    # Kappa should alternate sign (D-V alternation)
+    # (1) Kappa should alternate sign (D-V alternation)
     assert k.max() > 0 and k.min() < 0, "No D-V alternation in kappa"
 
-    # Meaningful curvature amplitude
+    # (2) Meaningful curvature amplitude
     assert k.std() > 0.1, f"kappa std {k.std():.4f} too low"
 
-    # Phase gradient quality (lower residual = more ordered)
+    # (3) Phase gradient quality (lower residual = more ordered)
     motor_pos = wd.pos_1d[wd.motor]
     motor_sort = np.argsort(motor_pos)
     phases = np.unwrap(state.theta[wd.motor][motor_sort])
@@ -803,6 +845,31 @@ def test_dv_traveling_wave():
     coeffs = np.polyfit(positions, phases, 1)
     residual = np.std(phases - np.polyval(coeffs, positions))
     assert residual < 5.0, f"Phase residual {residual:.2f} (baseline ~5.2)"
+
+    # (4) Phase propagation: kappa at head and mid-body should be phase-shifted
+    kappa_head = []
+    kappa_mid = []
+    for _ in range(1000):
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env, dt=0.005,
+             motor_classes=motor_classes, pos_1d=wd.pos_1d)
+        kappa_head.append(state.kappa[10])
+        kappa_mid.append(state.kappa[30])
+
+    kh = np.array(kappa_head) - np.mean(kappa_head)
+    km = np.array(kappa_mid) - np.mean(kappa_mid)
+
+    # Skip if either signal is flat (no oscillation)
+    if kh.std() > 0.01 and km.std() > 0.01:
+        xcorr = np.correlate(kh, km, mode='full')
+        lags = np.arange(-len(kh) + 1, len(kh))
+        # Search within ±200 steps (±1s) for the peak
+        mask = np.abs(lags) <= 200
+        peak_lag = lags[mask][np.argmax(xcorr[mask])]
+        assert abs(peak_lag) >= 3, (
+            f"Cross-correlation peak at lag={peak_lag} — "
+            "no phase propagation (standing wave)"
+        )
 
 
 def test_dv_rft_locomotion():

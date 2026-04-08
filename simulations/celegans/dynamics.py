@@ -10,6 +10,8 @@ Reference: celegans_trilayer.py lines 280-502.
 
 import numpy as np
 
+from .muscle import compute_dv_drive
+
 
 # ── Helper functions ──────────────────────────────────────────────────
 
@@ -399,32 +401,8 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         # ── 13a. Dorsal-ventral muscle model ──────────────────────
         activity = 0.5 * (1 + np.cos(theta))  # [0, 1]
 
-        F_d = np.zeros(Nx)
-        F_v = np.zeros(Nx)
-
-        # Excitatory: DA/DB -> dorsal, VA/VB -> ventral
-        # (K_muscle applied once at kappa output, not here)
-        for cls in ('DA', 'DB'):
-            idxs = np.array(motor_classes[cls])
-            if len(idxs) > 0:
-                np.add.at(F_d, neuron_body_idx[idxs], activity[idxs])
-        for cls in ('VA', 'VB'):
-            idxs = np.array(motor_classes[cls])
-            if len(idxs) > 0:
-                np.add.at(F_v, neuron_body_idx[idxs], activity[idxs])
-
-        # Inhibitory cross-coupling: DD -> suppress dorsal, VD -> suppress ventral
-        for cls in ('DD',):
-            idxs = np.array(motor_classes[cls])
-            if len(idxs) > 0:
-                np.add.at(F_d, neuron_body_idx[idxs], -p.K_muscle_inh * activity[idxs])
-        for cls in ('VD',):
-            idxs = np.array(motor_classes[cls])
-            if len(idxs) > 0:
-                np.add.at(F_v, neuron_body_idx[idxs], -p.K_muscle_inh * activity[idxs])
-
-        F_d = np.clip(F_d, 0, None)
-        F_v = np.clip(F_v, 0, None)
+        F_d, F_v = compute_dv_drive(
+            activity, neuron_body_idx, motor_classes, p.K_muscle_inh, Nx)
 
         # Low-pass muscle filter
         alpha_m = dt / (p.tau_muscle + dt)
