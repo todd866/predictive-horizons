@@ -42,9 +42,9 @@ DATA_DIR = Path(__file__).parent
 
 # ── Arena geometry ─────────────────────────────────────────────────
 PLATE_RADIUS = 50.0      # mm
-FOOD_X, FOOD_Y = 2.5, 0.0   # food source position
-START_X, START_Y = -2.5, 0.0  # worm start (5mm separation)
-FOOD_SIGMA = 5.0          # sharp gradient (volatile attractant)
+FOOD_X, FOOD_Y = 1.5, 0.0   # food source position
+START_X, START_Y = -1.5, 0.0  # worm start (3mm separation)
+FOOD_SIGMA = 3.0          # sharp gradient for slow model speed
 FOOD_STRENGTH = 1.0
 
 HEADINGS_FULL = np.linspace(0, 2 * np.pi, 8, endpoint=False)
@@ -54,7 +54,8 @@ SEEDS_PER_HEADING = 5
 DT = 0.001
 T_TOTAL = 300.0
 NX = 50
-KAPPA_SCALE = 200.0        # body curvature scaling (dynamics → physical mm^-1)
+KAPPA_SCALE = 100.0        # body curvature scaling (dynamics → physical mm^-1)
+                            # 100 gives stable heading (κAC~0.57); 200 causes wandering
 C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 
 # ── Directional proprioception ────────────────────────────────────
@@ -66,11 +67,13 @@ FRUSTRATION_ALPHA = 0.0    # disabled — doesn't improve wave (spatial coherenc
 
 # ── Navigation parameters ─────────────────────────────────────────
 NAV_BASE_REV_RATE = 2.0 / 60   # 2 reversals/min baseline
-NAV_SENSORY_GAIN = 40.0        # exponential gain on dC/dt (high sensitivity)
+NAV_SENSORY_GAIN = 200.0       # high gain compensates for slow model speed
+                                # (equivalent to gain~25 for biological 0.2 mm/s worm)
 NAV_TAU_DCDT = 3.0             # dC/dt smoothing timescale (s)
 NAV_MIN_STATE_DUR = 1.0        # min dwell in each state (s)
 NAV_MEAN_BACK_DUR = 2.0        # mean backward duration (s)
-WEATHERVANE_GAIN = 0.5          # heading torque per activity diff (rad/s)
+WEATHERVANE_GAIN = 0.0          # disabled — SMD bilateral signal doesn't
+                                # track gradient through Kuramoto network
 
 # ── Model configurations ──────────────────────────────────────────
 MODELS = [
