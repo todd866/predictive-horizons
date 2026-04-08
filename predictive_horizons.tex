@@ -495,6 +495,46 @@ The metabolic tradeoff is visible in the operating $\Deff$. The connectome-only 
 Mutual information with the environment is identical across all models (${\sim}0.19$ nats). The neuropeptide network does not add sensory information---it adds \textit{what the organism can do with that information}. The connectome routes sensory signals. The neuropeptide network configures the response. This distinction---between carrying information and being configured to act on it---is the functional consequence of the measurement-system gap that the entire paper examines.
 
 
+\subsection{Behavioral test: kinematic chemotaxis}
+\label{sec:chemotaxis}
+
+The preceding sections establish that richer coupling architectures improve internal metrics---motor coordination, effective dimensionality, spectral bandwidth. But an organism's fitness depends on what it \textit{does}, not what its neural dynamics look like. We therefore test whether the architectural differences translate into a behavioral difference: navigation toward a food source.
+
+\paragraph{Design.} Each architecture drives a simulated worm navigating an odor gradient on a circular plate. The worm starts 10\,mm from a Gaussian food source ($\sigma = 5$\,mm, peak concentration 1.0). Navigation uses the \textit{pirouette strategy}, the dominant mechanism in real \textit{C.~elegans} chemotaxis \cite{pierce-shimomura1999}: the worm crawls forward, and the rate of spontaneous reversals is modulated by the temporal derivative of concentration at the head. When $dC/dt > 0$ (moving up-gradient), reversals are suppressed; when $dC/dt < 0$ (moving down-gradient), reversals are enhanced. Over many reversal cycles, this biased random walk produces net displacement toward the food source.
+
+Critically, the locomotion is \textit{kinematic}: all models move at the same fixed speed (0.15\,mm/s) with identical heading noise (0.1\,rad/$\sqrt{\mathrm{s}}$). The body curvature from the neural dynamics is computed but does not drive locomotion, because the Kuramoto phase-oscillator model produces locally correlated undulation but not a true head-to-tail traveling wave (Section~\ref{sec:interpretation}). This is itself a result: the connectome topology, even with field coupling, does not generate the phase-lagged motor pattern that real locomotion requires. The traveling wave likely depends on circuit-level mechanisms (proprioceptive gain modulation, asymmetric gap junction rectification) that lie outside the current model class.
+
+The kinematic scaffold isolates a specific question: \textit{given the same locomotor capacity, do different coupling architectures produce different navigation performance through their effect on sensory-motor signal transmission?} The reversal decision reads AVA command interneuron activity from the neural dynamics. Sensory input (odor concentration) enters through AWC/AWA neurons and must propagate through the connectome coupling to reach AVA. Different architectures provide different effective connectivity for this relay.
+
+\paragraph{Results.} Four architectures were tested with 20 matched runs each (4 initial headings $\times$ 5 random seeds, 120\,s per run). All models show positive mean chemotaxis index, indicating successful navigation toward the food source (Figure~\ref{fig:chemotaxis}a):
+
+\begin{center}
+\begin{tabular}{l c c}
+\toprule
+\textbf{Architecture} & \textbf{CI (mean $\pm$ SEM)} & \textbf{Positive runs} \\
+\midrule
+Connectome only & $+0.19 \pm 0.11$ & 14/20 \\
++ Ephaptic & $+0.21 \pm 0.11$ & 15/20 \\
++ Neuropeptide & $+0.24 \pm 0.11$ & 14/20 \\
+Trilayer & $+0.26 \pm 0.10$ & 15/20 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Because runs are matched by initial heading and seed, the paired comparison is appropriate. The trilayer architecture produces significantly higher CI than connectome-only (mean $\Delta\text{CI} = +0.071$, paired $t$-test $p = 0.015$; Figure~\ref{fig:chemotaxis}b). The neuropeptide-only improvement is marginal ($\Delta\text{CI} = +0.052$, $p = 0.073$); the ephaptic-only improvement is not statistically significant ($\Delta\text{CI} = +0.018$, $p = 0.23$). Reversal rates are slightly lower in the neuropeptide-containing models (2.15/min vs.\ 2.25/min; Figure~\ref{fig:chemotaxis}c), consistent with improved sensory-motor transmission enabling more effective reversal suppression during up-gradient runs.
+
+\paragraph{Interpretation.} The result is narrow but real. Under identical locomotor conditions, richer coupling architectures improve navigation by improving the fidelity of sensory-to-motor signal transmission. The AWC$\to$AIB$\to$AVA relay that gates pirouette reversals involves neurons that are spatially clustered (body-axis positions $0.06$--$0.07$), where ephaptic coupling is strongest, and connected by neuropeptide pathways that modulate effective gain. The trilayer provides parallel channels for this relay; the connectome alone provides only the sparse chemical synapses (AIB$\to$AVA: 2--5 synapses, compared to thousands of total inputs to AVA).
+
+This does not demonstrate that richer coupling produces better \textit{locomotion}---the locomotor speed is prescribed. It demonstrates that the coupling architecture shapes the neural dynamics in ways that matter for behavior, even when locomotion is held constant. The distinction is important: the traveling-wave problem and the navigation problem are separable, and the current model addresses only the latter.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{simulations/figures/fig_chemotaxis.pdf}
+\caption{Kinematic chemotaxis comparison. Same 448-neuron connectome, four coupling architectures, 20 matched runs each (4 headings $\times$ 5 seeds, 120\,s, kinematic speed 0.15\,mm/s). \textbf{(a)}~Chemotaxis index by architecture. All models show positive mean CI (navigation toward food). Boxes show quartiles; horizontal bars show means; points show individual runs. \textbf{(b)}~Paired difference in CI between trilayer and connectome-only, matched by heading and seed. Mean shift $= +0.071$, paired $t$-test $p = 0.015$. \textbf{(c)}~Mean reversal rate ($\pm$\,SEM). Neuropeptide-containing models show slightly lower reversal rates, consistent with improved reversal suppression during up-gradient runs.}
+\label{fig:chemotaxis}
+\end{figure}
+
+
 %% ═══════════════════════════════════════════════════════════════════
 \section{The Observational Gap}
 \label{sec:gap}
@@ -769,6 +809,11 @@ Friston, K.J., FitzGerald, T., Rigoli, F., Schwartenbeck, P., Pezzulo, G. (2017)
 
 \bibitem{cohen2022}
 Cohen, A.A., Ferrucci, L., F\"ul\"op, T., Gravel, D., Hao, N., Kriete, A., Levine, M.E., Lipsitz, L.A., Olde Rikkert, M.G.M., Rutenberg, A., Stroustrup, N., Varadhan, R. (2022). A complex systems approach to aging biology. \textit{Nature Aging}, 2, 580--591.
+
+% === Chemotaxis ===
+
+\bibitem{pierce-shimomura1999}
+Pierce-Shimomura, J.T., Morse, T.M., Bhatt, D., Lockery, S.R. (1999). The fundamental role of pirouettes in \textit{Caenorhabditis elegans} chemotaxis. \textit{Journal of Neuroscience}, 19(21), 9557--9569.
 
 \end{thebibliography}
 
