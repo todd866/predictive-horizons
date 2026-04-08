@@ -69,10 +69,6 @@ C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 CRAWL_SPEED = 0.15         # mm/s (biological: 0.15-0.25)
 HEADING_NOISE = 0.1        # rad/sqrt(s) heading diffusion (lower = straighter runs)
 
-# ── Directional proprioception ────────────────────────────────────
-PROPRIO_GAIN = 1.5         # anterior-shifted proprioceptive gain
-PROPRIO_DELTA_S = 0.08     # anterior offset in body-lengths
-
 # ── Sakaguchi-Kuramoto frustration ────────────────────────────────
 FRUSTRATION_ALPHA = 0.0    # disabled — doesn't improve wave (spatial coherence from proprio)
 
@@ -144,11 +140,10 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
     n_sensors = min(len(wd.sensory), 50)
     budget = MetabolicBudget()
 
-    # Axial locomotor chain: VB + DB + VA + DA
-    loco_chain = np.concatenate([
-        np.array(wd.VB), np.array(wd.DB),
-        np.array(wd.VA), np.array(wd.DA),
-    ])
+    motor_classes = {
+        'VA': wd.VA, 'VB': wd.VB, 'DA': wd.DA, 'DB': wd.DB,
+        'VD': wd.VD, 'DD': wd.DD,
+    }
 
     # Sakaguchi-Kuramoto frustration matrix (motor-motor connections)
     if FRUSTRATION_ALPHA > 0:
@@ -197,16 +192,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
 
     t0 = time.time()
     for i in range(n_steps):
-        # ── Directional proprioception on locomotor chain ─────────
         ext_drive = np.zeros(wd.N)
-        kappa_local = np.interp(
-            wd.pos_1d[loco_chain], gm['grid_x'], state.kappa)
-        kappa_ant = np.interp(
-            np.clip(wd.pos_1d[loco_chain] - PROPRIO_DELTA_S, 0.0, 1.0),
-            gm['grid_x'], state.kappa)
-        local_prop = 0.3 * np.sin(kappa_local - state.theta[loco_chain])
-        dir_prop = PROPRIO_GAIN * np.sin(kappa_ant - state.theta[loco_chain])
-        ext_drive[loco_chain] += dir_prop - local_prop
 
         # ── Odor sensory drive ────────────────────────────────────
         hx, hy = body.head_position()
@@ -222,7 +208,9 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
                     use_eph=use_eph, use_npp=use_npp,
                     budget_scale=budget.budget_scale,
                     external_drive=ext_drive,
-                    frustration_matrix=frust_matrix)
+                    frustration_matrix=frust_matrix,
+                    motor_classes=motor_classes,
+                    pos_1d=wd.pos_1d)
 
         # ── Read circuit neuron activity ──────────────────────────
         activity = 0.5 + 0.5 * np.cos(state.theta)
@@ -311,7 +299,7 @@ def main():
 
     print(f"Arena: food at ({FOOD_X},{FOOD_Y}), start at ({START_X},{START_Y}), "
           f"separation={np.sqrt((FOOD_X-START_X)**2+(FOOD_Y-START_Y)**2):.0f}mm")
-    print(f"Proprio: gain={PROPRIO_GAIN}, delta_s={PROPRIO_DELTA_S}, C_n={C_N_AGAR}")
+    print(f"Proprio: via core dynamics (WormParams), C_n={C_N_AGAR}")
     print(f"Frustration: alpha={FRUSTRATION_ALPHA}")
     print(f"Navigation: rev_rate={NAV_BASE_REV_RATE:.3f}/s, "
           f"sensory_gain={NAV_SENSORY_GAIN}, weathervane={WEATHERVANE_GAIN}")
