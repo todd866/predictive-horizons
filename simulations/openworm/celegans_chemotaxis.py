@@ -60,7 +60,7 @@ C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 
 # ── Kinematic locomotion ──────────────────────────────────────────
 CRAWL_SPEED = 0.15         # mm/s (biological: 0.15-0.25)
-HEADING_NOISE = 0.3        # rad/sqrt(s) heading diffusion
+HEADING_NOISE = 0.1        # rad/sqrt(s) heading diffusion (lower = straighter runs)
 
 # ── Directional proprioception ────────────────────────────────────
 PROPRIO_GAIN = 1.5         # anterior-shifted proprioceptive gain
