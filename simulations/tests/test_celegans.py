@@ -418,16 +418,20 @@ def test_frustration_matrix_shape():
     from celegans.data import load_worm_data
     from celegans.coupling import build_frustration_matrix
     wd = load_worm_data(DATA_DIR)
-    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=1.0)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, alpha=1.0,
+                                      W_chem=wd.W_chem, W_gap=wd.W_gap)
     assert frust.shape == (448, 448)
     # Non-motor entries should be zero
     non_motor = [i for i in range(448) if i not in wd.motor]
     assert np.allclose(frust[non_motor, :], 0.0)
     assert np.allclose(frust[:, non_motor], 0.0)
-    # Should have some nonzero entries where motor gap junctions exist
-    assert np.abs(frust).sum() > 0
-    # Anti-symmetric: frust[i,j] = -frust[j,i]
-    assert np.allclose(frust, -frust.T, atol=1e-10)
+    # Should have nonzero entries where motor connections exist
+    assert (np.abs(frust) > 1e-10).sum() > 0
+    # Gap-only frustration is anti-symmetric; with chemical synapses, it's not
+    # (chemical synapses are directional). Verify gap-only case:
+    frust_gap = build_frustration_matrix(wd.pos_1d, wd.motor, alpha=1.0,
+                                          W_gap=wd.W_gap)
+    assert np.allclose(frust_gap, -frust_gap.T, atol=1e-10)
 
 
 def test_frustration_zero_alpha():
@@ -435,7 +439,8 @@ def test_frustration_zero_alpha():
     from celegans.data import load_worm_data
     from celegans.coupling import build_frustration_matrix
     wd = load_worm_data(DATA_DIR)
-    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=0.0)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, alpha=0.0,
+                                      W_chem=wd.W_chem, W_gap=wd.W_gap)
     assert np.allclose(frust, 0.0)
 
 
@@ -453,7 +458,8 @@ def test_dynamics_with_frustration():
     omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
     state = WormState(wd.N, 50, seed=42)
     n_sensors = min(len(wd.sensory), 50)
-    frust = build_frustration_matrix(wd.pos_1d, wd.motor, wd.W_gap, alpha=1.0)
+    frust = build_frustration_matrix(wd.pos_1d, wd.motor, alpha=1.0,
+                                      W_chem=wd.W_chem, W_gap=wd.W_gap)
 
     env = np.zeros(n_sensors)
     for _ in range(50):

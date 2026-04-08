@@ -141,11 +141,13 @@ def build_grid_mapping(pos_1d, Nx, sigma_sp=0.08):
     }
 
 
-def build_frustration_matrix(pos_1d, motor_indices, W_gap, alpha=1.0):
-    """Build Sakaguchi-Kuramoto frustration matrix for motor gap junctions.
+def build_frustration_matrix(pos_1d, motor_indices, alpha=1.0,
+                              W_chem=None, W_gap=None):
+    """Build Sakaguchi-Kuramoto frustration matrix for motor connections.
 
     Returns an (N, N) matrix where entry [i, j] = alpha * (pos_j - pos_i)
-    for motor-motor pairs connected by gap junctions, zero elsewhere.
+    for motor-motor pairs connected by chemical or gap junctions.
+    Zero elsewhere, so non-motor and unconnected pairs are unaffected.
 
     When used in coupling: sin(theta_i - theta_j - frustration[i,j]),
     this creates a preferred head-leads-tail phase gradient in the
@@ -156,11 +158,15 @@ def build_frustration_matrix(pos_1d, motor_indices, W_gap, alpha=1.0):
     pos_1d : ndarray, shape (N,)
         Body-axis position of each neuron in [0, 1].
     motor_indices : list of int
-        Indices of motor neurons (VA, VB, DA, DB).
-    W_gap : ndarray, shape (N, N)
-        Raw gap junction weight matrix.
+        Indices of motor neurons (VA, VB, DA, DB, etc.).
     alpha : float
         Frustration strength (radians per body-length of separation).
+    W_chem : ndarray, shape (N, N), optional
+        Chemical synapse weight matrix.  If given, motor-motor chemical
+        connections also receive frustration.
+    W_gap : ndarray, shape (N, N), optional
+        Gap junction weight matrix.  If given, motor-motor gap junctions
+        also receive frustration.
 
     Returns
     -------
@@ -171,7 +177,15 @@ def build_frustration_matrix(pos_1d, motor_indices, W_gap, alpha=1.0):
     motor_mask = np.zeros(N, dtype=bool)
     motor_mask[motor_indices] = True
     mm = motor_mask[:, None] & motor_mask[None, :]
-    gap_exists = W_gap > 0
-    mask = mm & gap_exists
+    # Only frustrate connected pairs
+    connected = np.zeros((N, N), dtype=bool)
+    if W_gap is not None:
+        connected |= (W_gap > 0)
+    if W_chem is not None:
+        connected |= (W_chem > 0)
+    if W_gap is None and W_chem is None:
+        # Fallback: all motor-motor pairs
+        connected = np.ones((N, N), dtype=bool)
+    mask = mm & connected
     pos_offset = pos_1d[None, :] - pos_1d[:, None]
     return np.where(mask, alpha * pos_offset, 0.0)

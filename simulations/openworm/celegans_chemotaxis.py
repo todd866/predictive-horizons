@@ -40,11 +40,11 @@ from celegans.behavior import TrajectoryRecorder
 
 DATA_DIR = Path(__file__).parent
 
-# ── Arena geometry (reduced separation) ───────────────────────────
+# ── Arena geometry ─────────────────────────────────────────────────
 PLATE_RADIUS = 50.0      # mm
-FOOD_X, FOOD_Y = 7.5, 0.0   # food source position
-START_X, START_Y = -7.5, 0.0  # worm start (15mm separation)
-FOOD_SIGMA = 15.0
+FOOD_X, FOOD_Y = 2.5, 0.0   # food source position
+START_X, START_Y = -2.5, 0.0  # worm start (5mm separation)
+FOOD_SIGMA = 5.0          # sharp gradient (volatile attractant)
 FOOD_STRENGTH = 1.0
 
 HEADINGS_FULL = np.linspace(0, 2 * np.pi, 8, endpoint=False)
@@ -54,7 +54,7 @@ SEEDS_PER_HEADING = 5
 DT = 0.001
 T_TOTAL = 300.0
 NX = 50
-KAPPA_SCALE = 100.0
+KAPPA_SCALE = 200.0        # body curvature scaling (dynamics → physical mm^-1)
 C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 
 # ── Directional proprioception ────────────────────────────────────
@@ -62,11 +62,11 @@ PROPRIO_GAIN = 1.5         # anterior-shifted proprioceptive gain
 PROPRIO_DELTA_S = 0.08     # anterior offset in body-lengths
 
 # ── Sakaguchi-Kuramoto frustration ────────────────────────────────
-FRUSTRATION_ALPHA = 1.5    # rad per body-length (phase gradient target)
+FRUSTRATION_ALPHA = 0.0    # disabled — doesn't improve wave (spatial coherence from proprio)
 
 # ── Navigation parameters ─────────────────────────────────────────
 NAV_BASE_REV_RATE = 2.0 / 60   # 2 reversals/min baseline
-NAV_SENSORY_GAIN = 8.0         # exponential gain on dC/dt
+NAV_SENSORY_GAIN = 40.0        # exponential gain on dC/dt (high sensitivity)
 NAV_TAU_DCDT = 3.0             # dC/dt smoothing timescale (s)
 NAV_MIN_STATE_DUR = 1.0        # min dwell in each state (s)
 NAV_MEAN_BACK_DUR = 2.0        # mean backward duration (s)
@@ -136,9 +136,13 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         np.array(wd.VA), np.array(wd.DA),
     ])
 
-    # Sakaguchi-Kuramoto frustration matrix (motor gap junctions only)
-    frust_matrix = build_frustration_matrix(
-        wd.pos_1d, wd.motor, wd.W_gap, alpha=FRUSTRATION_ALPHA)
+    # Sakaguchi-Kuramoto frustration matrix (motor-motor connections)
+    if FRUSTRATION_ALPHA > 0:
+        frust_matrix = build_frustration_matrix(
+            wd.pos_1d, wd.motor, alpha=FRUSTRATION_ALPHA,
+            W_chem=wd.W_chem, W_gap=wd.W_gap)
+    else:
+        frust_matrix = None
 
     # Navigation circuits
     nav = NavigationState(
@@ -282,10 +286,10 @@ def main():
     args = parser.parse_args()
 
     if args.quick:
-        headings = [0.0, np.pi]
-        seeds_per = 1
-        t_total = 60.0
-        print("Quick mode: 2 headings, 1 seed, 60s per model")
+        headings = [0.0, np.pi / 2, np.pi, 3 * np.pi / 2]
+        seeds_per = 2
+        t_total = 120.0
+        print("Quick mode: 4 headings, 2 seeds, 120s per model")
     else:
         headings = HEADINGS_FULL
         seeds_per = SEEDS_PER_HEADING

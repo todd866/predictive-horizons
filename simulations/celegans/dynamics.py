@@ -279,16 +279,17 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
     # ── 3. Phase differences (vectorised NxN) ─────────────────────
     phase_diff = theta[:, None] - theta[None, :]
     sin_diff = np.sin(phase_diff)
+    # Frustrated sin_diff: applies to motor-motor pairs (zero elsewhere)
+    if frustration_matrix is not None:
+        sin_diff_f = np.sin(phase_diff - frustration_matrix)
+    else:
+        sin_diff_f = sin_diff
 
     # ── 4. Layer 1: Connectome coupling (chemical + gap w/ depression)
     gap_eff = state.u_gap * W_gap_norm
-    if frustration_matrix is not None:
-        sin_diff_gap = np.sin(phase_diff - frustration_matrix)
-    else:
-        sin_diff_gap = sin_diff
     conn_coupling = budget_scale * (
-        p.K_chem * np.sum(W_chem_norm * sin_diff, axis=0)
-        + p.K_gap * np.sum(gap_eff * sin_diff_gap, axis=0)
+        p.K_chem * np.sum(W_chem_norm * sin_diff_f, axis=0)
+        + p.K_gap * np.sum(gap_eff * sin_diff_f, axis=0)
     )
 
     # ── 5. Layer 2: Ephaptic coupling (gated by phi, w/ depression)
@@ -296,7 +297,7 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
     if use_eph:
         phi_gate = phi_clipped[:, None] * phi_clipped[None, :]
         eph_eff = state.u_eph * W_eph_norm * phi_gate
-        eph_coupling = budget_scale * p.K_eph * np.sum(eph_eff * sin_diff, axis=0)
+        eph_coupling = budget_scale * p.K_eph * np.sum(eph_eff * sin_diff_f, axis=0)
 
     # ── 6. Layer 3: Neuropeptide modulation (slow frequency mod) ──
     if use_npp:
