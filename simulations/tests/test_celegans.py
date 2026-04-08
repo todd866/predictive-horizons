@@ -611,3 +611,13 @@ def test_dynamics_drives_body():
         "RFT produced zero velocity — pipeline broken"
     dist = np.sqrt(body.x_cm**2 + body.y_cm**2)
     assert dist > 0, f"Worm position unchanged from origin"
+
+
+def test_data_has_vd_dd():
+    from celegans.data import load_worm_data
+    wd = load_worm_data(DATA_DIR)
+    assert len(wd.VD) == 13
+    assert len(wd.DD) == 6
+    # VD spans most of body
+    assert wd.pos_1d[wd.VD].min() < 0.4
+    assert wd.pos_1d[wd.VD].max() > 0.9

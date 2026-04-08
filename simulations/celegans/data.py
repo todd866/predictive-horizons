@@ -52,6 +52,8 @@ WormData = namedtuple("WormData", [
     "VB",
     "DA",
     "DB",
+    "VD",
+    "DD",
 ])
 
 
@@ -182,6 +184,8 @@ def load_worm_data(data_dir):
     vb = [i for i, n in enumerate(neurons) if n.startswith("VB")]
     da = [i for i, n in enumerate(neurons) if n.startswith("DA")]
     db = [i for i, n in enumerate(neurons) if n.startswith("DB")]
+    vd = [i for i, n in enumerate(neurons) if n.startswith("VD")]
+    dd = [i for i, n in enumerate(neurons) if n.startswith("DD")]
 
     return WormData(
         neurons=neurons,
@@ -201,4 +205,6 @@ def load_worm_data(data_dir):
         VB=vb,
         DA=da,
         DB=db,
+        VD=vd,
+        DD=dd,
     )
