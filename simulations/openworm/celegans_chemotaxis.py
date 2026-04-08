@@ -235,15 +235,24 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL,
         ava_act = 0.5 * (activity[aval_idx] + activity[avar_idx])
 
         # ── Navigation state machine ─────────────────────────────
-        nav_state, did_reverse = nav.step(ava_act, circuit.last_dCdt, DT)
+        nav_state, did_reverse, did_resume = nav.step(
+            ava_act, circuit.last_dCdt, DT)
 
         if did_reverse:
-            turn = reversal_turn_angle(nav.dCdt_smooth, nav.rng)
-            body.reverse(turn)
             n_reversals += 1
 
+        # Pirouette turn at end of backward bout (not at start)
+        if did_resume:
+            turn = reversal_turn_angle(nav.dCdt_smooth, nav.rng)
+            body.reverse(turn)
+
         # ── Locomotion ────────────────────────────────────────────
-        if embodied:
+        if nav_state == NavigationState.BACKWARD:
+            # Backward: worm stops (pirouette phase); turn applied at resume
+            body.kinematic_step(state.kappa, gm['grid_x'], DT,
+                                speed=0.0, heading_noise_std=0.0,
+                                rng=body_rng)
+        elif embodied:
             body.step(state.kappa, gm['grid_x'], DT)
         else:
             body.kinematic_step(state.kappa, gm['grid_x'], DT,
@@ -352,8 +361,9 @@ def main():
                 result = run_single(model_name, use_eph, use_npp,
                                     heading, seed, t_total,
                                     embodied=args.embodied)
+                speed_key = 'displacement_speed' if args.embodied else 'mean_speed'
                 print(f"CI={result['chemotaxis_index']:+.4f} "
-                      f"v={result['mean_speed']:.5f} "
+                      f"v={result[speed_key]:.5f} "
                       f"rev={result['n_reversals']} "
                       f"κAC={result['kappa_autocorr']:.3f} "
                       f"({result['wall_time_s']:.0f}s)")
@@ -392,6 +402,9 @@ def main():
         meta['proprio_delta_s'] = EMBODIED_PROPRIO_DS
         meta['kappa_scale'] = EMBODIED_KAPPA_SCALE
         meta['C_n'] = EMBODIED_C_N
+        meta['note'] = ('sensory_gain differs from kinematic (250 vs 70) '
+                        'to compensate for slower dC/dt at embodied speed; '
+                        'CI differences not attributable to locomotion alone')
     output = {
         'metadata': meta,
         'runs': results,
@@ -405,9 +418,8 @@ def main():
     print(f"\nResults saved to {out_path}")
 
     # ── Summary table ─────────────────────────────────────────────
-    print(f"\n{'Model':<18} {'CI':>7} {'Speed':>9} {'κ AC':>7} "
-          f"{'Resid':>7} {'Rev/min':>8} {'Budget':>7}")
-    print('-' * 70)
+    print(f"\n{'Model':<18} {'CI':>14} {'Pos':>6} {'Rev/min':>8} {'κ AC':>7}")
+    print('-' * 58)
     for model_name, _, _ in MODELS:
         mr = [r for r in results if r['model'] == model_name]
         if mr:
@@ -415,10 +427,10 @@ def main():
             se = float(np.std(cis) / np.sqrt(len(cis)))
             pos = sum(1 for c in cis if c > 0)
             print(f"{model_name:<18} "
-                  f"{np.mean(cis):>+7.4f}±{se:.3f} "
-                  f"[{pos}/{len(cis)}+] "
-                  f"{np.mean([r['reversal_rate'] for r in mr]):>6.1f}r/m "
-                  f"{np.mean([r['kappa_autocorr'] for r in mr]):>6.3f}κ")
+                  f"{np.mean(cis):>+.4f}±{se:.3f} "
+                  f"{pos}/{len(cis)}+ "
+                  f"{np.mean([r['reversal_rate'] for r in mr]):>6.1f} "
+                  f"{np.mean([r['kappa_autocorr'] for r in mr]):>6.3f}")
 
 
 if __name__ == '__main__':

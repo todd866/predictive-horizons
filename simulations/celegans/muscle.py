@@ -14,11 +14,24 @@ Motor classes and their roles:
 import numpy as np
 
 
-def compute_dv_drive(activity, neuron_body_idx, motor_classes, K_muscle_inh, Nx):
-    """Point-deposit D-V muscle drive from neuron activations.
+def _smooth_1d(field, sigma_pts):
+    """Gaussian smooth a 1D field (zero-padded boundaries)."""
+    if sigma_pts < 0.5:
+        return field
+    hw = int(4 * sigma_pts)
+    x = np.arange(-hw, hw + 1)
+    kernel = np.exp(-x**2 / (2 * sigma_pts**2))
+    kernel /= kernel.sum()
+    return np.convolve(field, kernel, mode='same')
 
-    Fast vectorized version used by the dynamics engine. Each neuron's
-    activity is deposited at its nearest body-axis grid point.
+
+def compute_dv_drive(activity, neuron_body_idx, motor_classes, K_muscle_inh, Nx,
+                     sigma_grid=0.0):
+    """D-V muscle drive from neuron activations.
+
+    Each neuron's activity is deposited at its nearest body-axis grid
+    point, then optionally Gaussian-smoothed to model the spatial extent
+    of neuromuscular innervation.
 
     Parameters
     ----------
@@ -32,6 +45,10 @@ def compute_dv_drive(activity, neuron_body_idx, motor_classes, K_muscle_inh, Nx)
         Inhibitory gain relative to excitatory (e.g. 0.6).
     Nx : int
         Number of body-axis grid points.
+    sigma_grid : float
+        Gaussian smoothing width in grid points.  0 = no smoothing
+        (point deposit).  Typical: 4 grid points ≈ 0.08 body-lengths
+        at Nx=50.
 
     Returns
     -------
@@ -60,6 +77,10 @@ def compute_dv_drive(activity, neuron_body_idx, motor_classes, K_muscle_inh, Nx)
         idxs = np.array(motor_classes[cls])
         if len(idxs) > 0:
             np.add.at(F_v, neuron_body_idx[idxs], -K_muscle_inh * activity[idxs])
+
+    if sigma_grid > 0:
+        F_d = _smooth_1d(F_d, sigma_grid)
+        F_v = _smooth_1d(F_v, sigma_grid)
 
     return np.clip(F_d, 0, None), np.clip(F_v, 0, None)
 

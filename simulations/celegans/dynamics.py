@@ -114,6 +114,9 @@ class WormParams:
         self.proprio_gain = 1.5      # proprioceptive coupling strength
         self.proprio_delta_s = 0.08  # anterior offset in body-lengths
 
+        # Muscle spatial spread (grid points; 4 ≈ 0.08 body-lengths at Nx=50)
+        self.muscle_sigma = 4.0
+
         # Override any defaults with caller-supplied values
         for key, val in kwargs.items():
             if not hasattr(self, key):
@@ -402,7 +405,8 @@ def step(state, params, omegas, coupling_matrices, grid_mapping,
         activity = 0.5 * (1 + np.cos(theta))  # [0, 1]
 
         F_d, F_v = compute_dv_drive(
-            activity, neuron_body_idx, motor_classes, p.K_muscle_inh, Nx)
+            activity, neuron_body_idx, motor_classes, p.K_muscle_inh, Nx,
+            sigma_grid=p.muscle_sigma)
 
         # Low-pass muscle filter
         alpha_m = dt / (p.tau_muscle + dt)

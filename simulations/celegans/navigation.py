@@ -86,6 +86,9 @@ class NavigationState:
             FORWARD (0) or BACKWARD (1).
         did_reverse : bool
             True if a forward->backward transition happened this step.
+        did_resume : bool
+            True if a backward->forward transition happened this step.
+            This is where the pirouette turn should be applied.
         """
         self.state_timer += dt
 
@@ -94,6 +97,7 @@ class NavigationState:
         self.dCdt_smooth += alpha * (dCdt - self.dCdt_smooth)
 
         did_reverse = False
+        did_resume = False
 
         if self.state == self.FORWARD:
             if self.state_timer >= self.min_state_duration:
@@ -118,6 +122,7 @@ class NavigationState:
                 if self._next_event_time <= 0:
                     self.state = self.FORWARD
                     self.state_timer = 0.0
+                    did_resume = True
                     # Draw next forward->backward wait
                     rate = self.base_rev_rate * np.exp(
                         -self.sensory_gain * self.dCdt_smooth)
@@ -125,7 +130,7 @@ class NavigationState:
                     rate = np.clip(rate, 1e-6, 10.0)
                     self._next_event_time = self._draw_wait(rate)
 
-        return self.state, did_reverse
+        return self.state, did_reverse, did_resume
 
 
 def reversal_turn_angle(dCdt_smooth, rng, base_angle=np.pi / 2,
