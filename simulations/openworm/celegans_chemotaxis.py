@@ -51,7 +51,7 @@ HEADINGS_FULL = np.linspace(0, 2 * np.pi, 8, endpoint=False)
 SEEDS_PER_HEADING = 5
 
 # ── Simulation parameters ─────────────────────────────────────────
-DT = 0.001
+DT = 0.005             # 5ms timestep (safe for Kuramoto at 1Hz, 5x faster)
 T_TOTAL = 300.0
 NX = 50
 KAPPA_SCALE = 100.0        # body curvature scaling (dynamics → physical mm^-1)
