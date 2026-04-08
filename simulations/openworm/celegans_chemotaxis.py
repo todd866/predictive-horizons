@@ -42,9 +42,9 @@ DATA_DIR = Path(__file__).parent
 
 # ── Arena geometry ─────────────────────────────────────────────────
 PLATE_RADIUS = 50.0      # mm
-FOOD_X, FOOD_Y = 1.5, 0.0   # food source position
-START_X, START_Y = -1.5, 0.0  # worm start (3mm separation)
-FOOD_SIGMA = 3.0          # sharp gradient for slow model speed
+FOOD_X, FOOD_Y = 5.0, 0.0   # food source position
+START_X, START_Y = -5.0, 0.0  # worm start (10mm separation)
+FOOD_SIGMA = 5.0          # sharp gradient
 FOOD_STRENGTH = 1.0
 
 HEADINGS_FULL = np.linspace(0, 2 * np.pi, 8, endpoint=False)
@@ -58,6 +58,10 @@ KAPPA_SCALE = 100.0        # body curvature scaling (dynamics → physical mm^-1
                             # 100 gives stable heading (κAC~0.57); 200 causes wandering
 C_N_AGAR = 5.0            # agar surface anisotropy (Fang-Yen et al. 2010)
 
+# ── Kinematic locomotion ──────────────────────────────────────────
+CRAWL_SPEED = 0.15         # mm/s (biological: 0.15-0.25)
+HEADING_NOISE = 0.3        # rad/sqrt(s) heading diffusion
+
 # ── Directional proprioception ────────────────────────────────────
 PROPRIO_GAIN = 1.5         # anterior-shifted proprioceptive gain
 PROPRIO_DELTA_S = 0.08     # anterior offset in body-lengths
@@ -67,8 +71,8 @@ FRUSTRATION_ALPHA = 0.0    # disabled — doesn't improve wave (spatial coherenc
 
 # ── Navigation parameters ─────────────────────────────────────────
 NAV_BASE_REV_RATE = 2.0 / 60   # 2 reversals/min baseline
-NAV_SENSORY_GAIN = 200.0       # high gain compensates for slow model speed
-                                # (equivalent to gain~25 for biological 0.2 mm/s worm)
+NAV_SENSORY_GAIN = 70.0        # exponential gain on dC/dt
+                                # gives ~4:1 reversal ratio at model dCdt ≈ 0.01
 NAV_TAU_DCDT = 3.0             # dC/dt smoothing timescale (s)
 NAV_MIN_STATE_DUR = 1.0        # min dwell in each state (s)
 NAV_MEAN_BACK_DUR = 2.0        # mean backward duration (s)
@@ -177,6 +181,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
     circuit = OdorCircuit(wd.neuron_idx, wd.N)
     rec = TrajectoryRecorder()
     dummy_env = np.zeros(n_sensors)
+    body_rng = np.random.RandomState(seed + 20000)
 
     n_steps = int(t_total / DT)
     record_every = max(1, int(0.01 / DT))  # 100 Hz recording
@@ -204,7 +209,7 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         sensory_drive = circuit.transduce(C_left, C_right, DT)
         ext_drive += sensory_drive
 
-        # ── Neural dynamics (with frustration) ────────────────────
+        # ── Neural dynamics ───────────────────────────────────────
         diag = step(state, params, omegas, cm, gm,
                     wd.sensory, wd.motor, n_sensors, dummy_env, DT,
                     use_eph=use_eph, use_npp=use_npp,
@@ -215,8 +220,6 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
         # ── Read circuit neuron activity ──────────────────────────
         activity = 0.5 + 0.5 * np.cos(state.theta)
         ava_act = 0.5 * (activity[aval_idx] + activity[avar_idx])
-        smdl_act = activity[smdvl_idx] if smdvl_idx is not None else 0.5
-        smdr_act = activity[smdvr_idx] if smdvr_idx is not None else 0.5
 
         # ── Navigation state machine ─────────────────────────────
         nav_state, did_reverse = nav.step(ava_act, circuit.last_dCdt, DT)
@@ -226,13 +229,11 @@ def run_single(model_name, use_eph, use_npp, heading, seed, t_total=T_TOTAL):
             body.reverse(turn)
             n_reversals += 1
 
-        # ── Weathervane (forward locomotion only) ─────────────────
-        if nav_state == NavigationState.FORWARD:
-            torque = weathervane.heading_torque(smdl_act, smdr_act)
-            body.apply_torque(torque, DT)
-
-        # ── Body + arena + budget ─────────────────────────────────
-        body.step(state.kappa, gm['grid_x'], DT)
+        # ── Kinematic locomotion ──────────────────────────────────
+        # Fixed speed + heading noise; full neural dynamics for readouts
+        body.kinematic_step(state.kappa, gm['grid_x'], DT,
+                            speed=CRAWL_SPEED, heading_noise_std=HEADING_NOISE,
+                            rng=body_rng)
         body.enforce_bounds(arena)
         budget.update(DT, **diag)
 

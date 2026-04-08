@@ -297,6 +297,43 @@ class ArticulatedBody:
         self.seg_angles += turn_angle
         self.segment_positions()
 
+    def kinematic_step(self, kappa_grid, grid_x, dt, speed, heading_noise_std, rng):
+        """Kinematic locomotion: fixed speed along heading + noise.
+
+        Preserves body geometry (curvature, head/bilateral positions) for
+        sensory sampling while prescribing locomotion speed.  This decouples
+        navigation from the traveling-wave problem.
+
+        Parameters
+        ----------
+        kappa_grid, grid_x : as in ``step``
+            Used to update body shape for sensing.
+        dt : float
+        speed : float
+            Forward speed in mm/s.
+        heading_noise_std : float
+            Heading diffusion in rad/sqrt(s).
+        rng : numpy.random.RandomState
+        """
+        # Update body shape for sensing
+        self.set_curvature(kappa_grid, grid_x)
+        self.segment_positions()
+        self.prev_positions = self._positions.copy()
+
+        # Kinematic heading update
+        self.heading += heading_noise_std * rng.randn() * np.sqrt(dt)
+
+        # Kinematic position update
+        self.x_cm += speed * np.cos(self.heading) * dt
+        self.y_cm += speed * np.sin(self.heading) * dt
+        self._v_cm = np.array([speed * np.cos(self.heading),
+                                speed * np.sin(self.heading)])
+        self._omega = 0.0
+
+        # Recompute positions at new CM
+        self.seg_angles[:] = self.heading  # straight body for simplicity
+        self.segment_positions()
+
     def apply_torque(self, torque, dt):
         """Apply external heading torque (e.g. weathervane bias).
 
