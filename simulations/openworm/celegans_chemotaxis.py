@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """
-Chemotaxis simulation: C. elegans navigating an odor gradient.
+Kinematic chemotaxis comparison: C. elegans coupling architectures.
 
-Runs 4 model configurations x N_headings x N_seeds on a reduced-distance
-chemotaxis assay. Compares navigation performance across coupling
-architectures using:
-  1. Sakaguchi-Kuramoto frustration on motor gap junctions (traveling wave)
-  2. Pirouette navigation state machine (reversal modulation by dC/dt)
-  3. Weathervane heading bias (bilateral SMD asymmetry)
+Compares navigation performance across 4 coupling architectures
+(connectome-only, +ephaptic, +neuropeptide, trilayer) using a
+kinematic locomotion scaffold with pirouette navigation.
 
-Locomotor scaffold:
-  - Directional proprio on VB/DB/VA/DA (body-wall locomotor chain)
-  - C_n = 5.0 (agar surface anisotropy)
+IMPORTANT: This is a *kinematic* assay, not embodied locomotion.
+  - The worm moves at a fixed speed (CRAWL_SPEED) with heading noise
+  - Body curvature from neural dynamics is computed but does NOT drive
+    locomotion (the Kuramoto model produces standing waves, not traveling)
+  - Navigation comes from reversal modulation: the NavigationState reads
+    dC/dt from the OdorCircuit and AVA activity from the neural dynamics
+    to modulate reversal timing (pirouette strategy)
+  - Architecture differences affect the sensory-to-motor signal
+    transmission, which modulates reversal timing differently
+
+This separates the navigation question ("do coupling architectures
+produce different navigation?") from the locomotion question ("can
+the Kuramoto model produce a traveling wave?" — answer: no).
 
 Usage:
     python3 openworm/celegans_chemotaxis.py [--quick]
@@ -291,9 +298,9 @@ def main():
 
     if args.quick:
         headings = [0.0, np.pi / 2, np.pi, 3 * np.pi / 2]
-        seeds_per = 2
+        seeds_per = 5
         t_total = 120.0
-        print("Quick mode: 4 headings, 2 seeds, 120s per model")
+        print("Quick mode: 4 headings, 5 seeds, 120s per model")
     else:
         headings = HEADINGS_FULL
         seeds_per = SEEDS_PER_HEADING
@@ -329,12 +336,39 @@ def main():
                       f"({result['wall_time_s']:.0f}s)")
                 results.append(result)
 
-    # ── Save results ──────────────────────────────────────────────
+    # ── Save results with metadata ──────────────────────────────────
+    import subprocess
+    git_sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
+                              capture_output=True, text=True).stdout.strip()
+    output = {
+        'metadata': {
+            'git_sha': git_sha,
+            'dt': DT,
+            't_total': t_total,
+            'n_headings': len(headings),
+            'n_seeds': seeds_per,
+            'n_models': len(MODELS),
+            'total_runs': len(results),
+            'locomotion_mode': 'kinematic',
+            'crawl_speed_mm_s': CRAWL_SPEED,
+            'heading_noise_rad_sqrt_s': HEADING_NOISE,
+            'food_x': FOOD_X,
+            'food_y': FOOD_Y,
+            'start_x': START_X,
+            'start_y': START_Y,
+            'food_sigma': FOOD_SIGMA,
+            'sensory_gain': NAV_SENSORY_GAIN,
+            'base_rev_rate': NAV_BASE_REV_RATE,
+            'weathervane_gain': WEATHERVANE_GAIN,
+            'frustration_alpha': FRUSTRATION_ALPHA,
+        },
+        'runs': results,
+    }
     out_dir = Path(__file__).parent.parent / 'results'
     out_dir.mkdir(exist_ok=True)
     out_path = out_dir / 'chemotaxis_results.json'
     with open(out_path, 'w') as f:
-        json.dump(results, f, indent=2)
+        json.dump(output, f, indent=2)
     print(f"\nResults saved to {out_path}")
 
     # ── Summary table ─────────────────────────────────────────────
@@ -344,13 +378,14 @@ def main():
     for model_name, _, _ in MODELS:
         mr = [r for r in results if r['model'] == model_name]
         if mr:
+            cis = [r['chemotaxis_index'] for r in mr]
+            se = float(np.std(cis) / np.sqrt(len(cis)))
+            pos = sum(1 for c in cis if c > 0)
             print(f"{model_name:<18} "
-                  f"{np.mean([r['chemotaxis_index'] for r in mr]):>+7.4f} "
-                  f"{np.mean([r['mean_speed'] for r in mr]):>9.5f} "
-                  f"{np.mean([r['kappa_autocorr'] for r in mr]):>7.3f} "
-                  f"{np.mean([r['phase_residual'] for r in mr]):>7.2f} "
-                  f"{np.mean([r['reversal_rate'] for r in mr]):>8.1f} "
-                  f"{np.mean([r['final_budget'] for r in mr]):>7.3f}")
+                  f"{np.mean(cis):>+7.4f}±{se:.3f} "
+                  f"[{pos}/{len(cis)}+] "
+                  f"{np.mean([r['reversal_rate'] for r in mr]):>6.1f}r/m "
+                  f"{np.mean([r['kappa_autocorr'] for r in mr]):>6.3f}κ")
 
 
 if __name__ == '__main__':
