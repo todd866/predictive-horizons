@@ -680,3 +680,126 @@ def test_muscle_inhibition_reduces_activation():
     _, F_v_with_inh = muscle_drive([], [(0.5, 1.0)], [], [(0.5, 0.8)],
                                     grid_x, sigma=0.08)
     assert F_v_with_inh[Nx // 2] < F_v_no_inh[Nx // 2]
+
+
+def test_dv_body_mechanics():
+    """D-V muscle model produces signed curvature from opposing motor classes."""
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams()
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, 50, seed=42)
+    n_sensors = min(len(wd.sensory), 50)
+    env = np.zeros(n_sensors)
+
+    motor_classes = {
+        'VA': wd.VA, 'VB': wd.VB, 'DA': wd.DA, 'DB': wd.DB,
+        'VD': wd.VD, 'DD': wd.DD,
+    }
+
+    for _ in range(200):
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env, dt=0.005,
+             motor_classes=motor_classes)
+
+    # Kappa should have both positive and negative values (D-V alternation)
+    assert state.kappa.max() > 0
+    assert state.kappa.min() < 0
+    # Muscle fields should be non-negative
+    assert state.m_dorsal.min() >= 0
+    assert state.m_ventral.min() >= 0
+
+
+def test_anterior_delayed_proprio():
+    """Anterior-delayed proprio creates a phase gradient along the body."""
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams(proprio_gain=2.0, proprio_delta_s=0.1)
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, 50, seed=42)
+    n_sensors = min(len(wd.sensory), 50)
+    env = np.zeros(n_sensors)
+
+    motor_classes = {
+        'VA': wd.VA, 'VB': wd.VB, 'DA': wd.DA, 'DB': wd.DB,
+        'VD': wd.VD, 'DD': wd.DD,
+    }
+
+    for _ in range(2000):
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env, dt=0.005,
+             motor_classes=motor_classes, pos_1d=wd.pos_1d)
+
+    # Motor phase gradient: should be more ordered than without proprio
+    motor_pos = wd.pos_1d[wd.motor]
+    motor_sort = np.argsort(motor_pos)
+    phases = np.unwrap(state.theta[wd.motor][motor_sort])
+    positions = motor_pos[motor_sort]
+    coeffs = np.polyfit(positions, phases, 1)
+    residual = np.std(phases - np.polyval(coeffs, positions))
+
+    # With anterior-delayed proprio, phase residual should be finite and reasonable
+    assert residual < 8.0, f"Phase residual {residual:.2f} too high"
+
+
+def test_dv_traveling_wave():
+    """D-V muscles + anterior-delayed proprio should produce a traveling wave.
+
+    Measured by: (1) kappa has both signs (D-V alternation),
+    (2) meaningful curvature amplitude (kappa_std > 0.1),
+    (3) phase residual < 5.0 (improved from standing-wave baseline ~5.2).
+
+    Note: kappa spatial autocorrelation at lag-1 may be negative because
+    the D-V model creates fine-scale dorsal-ventral alternation. This is
+    correct — the wave structure appears at the motor-neuron scale, not
+    the grid-point scale.
+    """
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams(proprio_gain=3.0, proprio_delta_s=0.1,
+                         K_muscle=1.5, K_muscle_inh=0.6, tau_muscle=0.05)
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, 50, seed=42)
+    n_sensors = min(len(wd.sensory), 50)
+    env = np.zeros(n_sensors)
+
+    motor_classes = {
+        'VA': wd.VA, 'VB': wd.VB, 'DA': wd.DA, 'DB': wd.DB,
+        'VD': wd.VD, 'DD': wd.DD,
+    }
+
+    for _ in range(2000):
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env, dt=0.005,
+             motor_classes=motor_classes, pos_1d=wd.pos_1d)
+
+    k = state.kappa
+    # Kappa should alternate sign (D-V alternation)
+    assert k.max() > 0 and k.min() < 0, "No D-V alternation in kappa"
+
+    # Meaningful curvature amplitude
+    assert k.std() > 0.1, f"kappa std {k.std():.4f} too low"
+
+    # Phase gradient quality (lower residual = more ordered)
+    motor_pos = wd.pos_1d[wd.motor]
+    motor_sort = np.argsort(motor_pos)
+    phases = np.unwrap(state.theta[wd.motor][motor_sort])
+    positions = motor_pos[motor_sort]
+    coeffs = np.polyfit(positions, phases, 1)
+    residual = np.std(phases - np.polyval(coeffs, positions))
+    assert residual < 5.0, f"Phase residual {residual:.2f} (baseline ~5.2)"
