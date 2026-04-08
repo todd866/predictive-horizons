@@ -803,3 +803,38 @@ def test_dv_traveling_wave():
     coeffs = np.polyfit(positions, phases, 1)
     residual = np.std(phases - np.polyval(coeffs, positions))
     assert residual < 5.0, f"Phase residual {residual:.2f} (baseline ~5.2)"
+
+
+def test_dv_rft_locomotion():
+    """D-V muscle wave should produce forward RFT locomotion."""
+    from celegans import (
+        load_worm_data, build_coupling_matrices, build_grid_mapping,
+        WormState, WormParams, assign_frequencies, step,
+    )
+    from celegans.body import ArticulatedBody
+
+    wd = load_worm_data(DATA_DIR)
+    cm = build_coupling_matrices(wd)
+    gm = build_grid_mapping(wd.pos_1d, Nx=50)
+    params = WormParams(proprio_gain=3.0, proprio_delta_s=0.1,
+                         K_muscle=1.5, K_muscle_inh=0.6, tau_muscle=0.05)
+    omegas = assign_frequencies(wd.N, wd.sensory, wd.motor, wd.inter)
+    state = WormState(wd.N, 50, seed=42)
+    n_sensors = min(len(wd.sensory), 50)
+    env = np.zeros(n_sensors)
+    motor_classes = {
+        'VA': wd.VA, 'VB': wd.VB, 'DA': wd.DA, 'DB': wd.DB,
+        'VD': wd.VD, 'DD': wd.DD,
+    }
+    body = ArticulatedBody(n_segments=50, body_length_mm=1.0,
+                            x0=0, y0=0, heading0=0,
+                            kappa_scale=100, C_n=5.0)
+
+    for _ in range(4000):  # 20s at dt=0.005
+        step(state, params, omegas, cm, gm,
+             wd.sensory, wd.motor, n_sensors, env, dt=0.005,
+             motor_classes=motor_classes, pos_1d=wd.pos_1d)
+        body.step(state.kappa, gm['grid_x'], dt=0.005)
+
+    dist = np.sqrt(body.x_cm**2 + body.y_cm**2)
+    assert dist > 0.3, f"Displacement {dist:.3f}mm too low for D-V RFT locomotion"
